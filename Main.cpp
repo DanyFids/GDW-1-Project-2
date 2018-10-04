@@ -8,7 +8,7 @@ private:
 	int topId = 0;
 public:
 	Deck(T c[]) {
-		cards = &c;
+		cards = c;
 
 		shuffle();
 	}
@@ -78,6 +78,7 @@ private:
 	Weapon murderWep;
 	Character murderer;
 	Rooms murderRoom;
+
 public:
 	Solution(Weapon w, Character c, Rooms r) {
 		murderWep = w;
@@ -86,7 +87,7 @@ public:
 	}
 
 	bool guess(Weapon w, Character c, Rooms r) {
-		if (murderWep.equals(w) && murderer == c && murderRoom = r) {
+		if (murderWep == w && murderer == c && murderRoom == r) {
 			return true;
 		}
 		else {
@@ -99,9 +100,13 @@ public:
 
 Rooms BoardLayout[24][24] = {};
 
-Deck<Weapon> WeaponDeck({Candlestick, Pipe, Wrench, Rope, Knife, Revolver});
-Deck<Character> CharacterDeck({Ms_Scarlet, Prof_Plum, Mr_Green, Mrs_Peacock, Col_Mustard, Ms_White });
-Deck<Rooms> RoomDeck({ Hall, Lounge, Study, Library, BilliardRoom, Conservatory, BallRoom, Kitchen, DinningRoom });
+Weapon WeapCards[] = { Candlestick, Pipe, Wrench, Rope, Knife, Revolver };
+Character CharCards[] = { Ms_Scarlet, Prof_Plum, Mr_Green, Mrs_Peacock, Col_Mustard, Ms_White };
+Rooms RoomCards[] = { Hall, Lounge, Study, Library, BilliardRoom, Conservatory, BallRoom, Kitchen, DinningRoom };
+
+Deck<Weapon> WeaponDeck(WeapCards);
+Deck<Character> CharacterDeck(CharCards);
+Deck<Rooms> RoomDeck(RoomCards);
 
 int main() {
 	
