@@ -1,5 +1,9 @@
-int main() {
-	int i = 0;
-	int r = 0;
-	return i;
+#include <iostrean>
+
+using namespace std;
+
+int main() 
+{
+	cout << "
+	
 }
