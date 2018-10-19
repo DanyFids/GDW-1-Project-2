@@ -482,27 +482,30 @@ void ButtonHandler(ACTION action) {
 		clear();
 		cout << "Instructions for who starts the game are whoever has Miss Scarlet (red) rolls the die and is the first to move. \n" 
 			"Clue game play is then continued to the player left of Miss Scarlet. \n"
-
+			"\n"
+			"Movement \n"
 			"Players move their suspect token across the squares the amount shown on the die in their roll.You may move your \n"
-			"token forwards, backwards or sideways all in one turn. \n"
+			"token forwards, backwards or sideways all in one turn using the arrow keys. \n"
 			"Moving your token diagonally is against the Clue rules.You cannot move your token to a particular space twice in the \n" 
 			"same turn nor occupy or move through the same square as another player. \n"
 			"This rule does not apply to rooms as multiple players and weapons may occupy the same room. \n"
-
+			"\n"
+			"Rooms \n"
 			"The Clue board game rules state that there is one way to enter or exit a room : 1) entering through the doorway \n"
 			"by moving your token the number shown on the die across the squares, \n" 
-
+			"\n"
+			"Guessing the Killer \n"
 			"Once a player enters a room, they are then eligible to make a “suggestion” on who committed the Clue game murder. \n"
 			"This is done when the player names a Suspect, a Weapon, and the Room \n"
 			"that they are currently in(“I suggest that the crime was committed in the Library, by Prof.Plum with the Rope”). \n"
 			"Forfeiting or not taking your turn is against the rules; all players must roll the die.After entering a room and \n"
 			"making a suggestions, you may not make another suggestions until entering \n"
 			"another room or using at least two turns(leaving and then re - entering the same room). \n"
-
+			"\n"
 			"It is not against the rules, to deliberately make a \n"
 			"Suggestion naming one or two cards that you hold in your own hand to mislead \n"
 			"other players or to narrow your search for one specific suspect, room, or weapon. \n"
-
+			"\n"
 			"When an Accusation is made, the player(on their turn) states that an Accusation is being made and states the three \n"
 			"cards that he thinks committed the murder.The game will then say if the guess was correct or wrong. \n"
 			"Unlike the previously stated rules, a player may make an accusation whether or not their token is in the room they \n"
