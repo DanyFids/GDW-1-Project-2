@@ -6,6 +6,7 @@ enum TileType {
 };
 
 enum Rooms {
+	Null,
 	Basement,
 	Hall,
 	Lounge,
@@ -53,6 +54,10 @@ enum GameState {
 enum ACTION {
 	DEFAULT,
 	PLAY,
+	NOTES,
+	S_PASSAGE,
+	ROLL,
+	DISP_CONTROL,
 
 	COLORS,
 	CHARACTERS

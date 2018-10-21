@@ -24,6 +24,7 @@ private:
 	ACTION action;
 	int size, x, y;
 	bool hov = false;
+	bool disabled = false;
 public:
 	Button() {
 		text = "Default";
@@ -42,7 +43,7 @@ public:
 	}
 
 	bool isOver(COORD pos) {
-		if (pos.Y == y && pos.X < x + text.length() + 4 && pos.X > x) {
+		if (pos.Y == y && pos.X < x + text.length() + 2 && pos.X > x) {
 			return true;
 		}
 		else {
@@ -56,22 +57,35 @@ public:
 
 	void draw(HANDLE out) {
 		GoToXY(x, y);
-
-
-		if (isOver(mouseLoc)) {
-			cout << " |";
+		if (disabled) {
+			SetConsoleTextAttribute(out, Palette.Board);
+			cout << "|" << text << "|";
+			SetConsoleTextAttribute(out, Palette.Default);
+		}
+		else if (isOver(mouseLoc)) {
+			cout << "|";
 			SetConsoleTextAttribute(out, Palette.Button);
 			cout << text;
 			SetConsoleTextAttribute(out, Palette.Default);
-			cout << "| ";
+			cout << "|";
 		}
 		else {
-			cout << " |" << text << "| ";
+			cout << "|" << text << "|";
 		}
 		GoToXY(0, 0);
 	}
 
+	void Disable() {
+		disabled = true;
+	}
 
+	void Enable() {
+		disabled = false;
+	}
+
+	bool IsDisabled() {
+		return disabled;
+	}
 };
 
 /*****************

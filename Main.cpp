@@ -14,14 +14,6 @@
 
 using namespace std;
 
-
-
-// Global Variables Classes Depend on
-
-
-// Classes
-
-
 // Solution
 class Solution {
 private:
@@ -48,11 +40,6 @@ public:
 	}
 };
 
-
-
-
-
-
 class MainMenu :public Screen {
 private:
 	static const int NUM_BUTTONS = 3;
@@ -73,30 +60,102 @@ public:
 	}
 };
 
-
-
 //Class Functions
 bool Player::move(Direction d, Board board) {
-	switch (d) {
-	case Up:
-		if (y > 0 && !board.IsWall(x, y - 1))
-			y -= 1;
-		break;
-	case Down:
-		if (y < 24 && !board.IsWall(x, y + 1))
-			y += 1;
-		break;
-	case Right:
-		if (x < 24 && !board.IsWall(x + 1, y))
-			x += 1;
-		break;
-	case Left:
-		if (x > 0 && !board.IsWall(x - 1, y))
-			x -= 1;
-		break;
+	int nX = x, nY = y;
+	bool colision = false;
+
+	if (board.IsEntrance(x, y) && d == board.GetDir(x, y)) {
+		inRoom = true;
+		room = board.GetRoom(x, y);
+		COORD roomC = board.GetRoomCoord(pChar, room);
+		x = roomC.X;
+		y = roomC.Y;
+		NextTurn();
+	}
+	else {
+		if (!inRoom) {
+			switch (d) {
+			case Up:
+				if (y > 0)
+					nY = y - 1;
+				break;
+			case Down:
+				if (y < BOARD_D)
+					nY = y + 1;
+				break;
+			case Right:
+				if (x < BOARD_D)
+					nX = x + 1;
+				break;
+			case Left:
+				if (x > 0)
+					nX = x - 1;
+				break;
+			}
+
+			if (board.IsWall(nX, nY)) {
+				colision = true;
+			}
+
+			Player * players = board.getPlayers();
+			for (int c = 0; c < board.NumPlayers(); c++) {
+				if (nX == players[c].GetX() && nY == players[c].GetY()) {
+					colision = true;
+				}
+			}
+
+			if (!colision) {
+				x = nX;
+				y = nY;
+				movePoints--;
+
+				if (movePoints <= 0) {
+					NextTurn();
+				}
+			}
+		}
+		else {
+			switch (d) {
+			case Right:
+				selectExit++;
+				if (selectExit >= numExits) {
+					selectExit = 0;
+				}
+				break;
+			case Left:
+				selectExit--;
+				if (selectExit < 0) {
+					selectExit = numExits - 1;
+				}
+				break;
+			}
+		}
 	}
 
 	return true;
+}
+
+void Player::EnterRoom(Rooms r, Board b) {
+	inRoom = true;
+	room = r;
+	COORD roomC = b.GetRoomCoord(pChar, room);
+	x = roomC.X;
+	y = roomC.Y;
+	b.GetExits(room, numExits, Exits);
+	selectExit = -1;
+	NextTurn();
+}
+
+void Player::TurnStart(Board board) {
+	blinkTimer = 0;
+	movePoints = 6;
+	isTurn = true;
+
+	if (inRoom) {
+		board.GetExits(room, numExits, Exits);
+		selectExit = -1;
+	}
 }
 
 // GLOBAL VARIABLES
@@ -241,14 +300,19 @@ void Draw(HANDLE out) {
 	switch (state) {
 	case Menu:
 		mainMenu.Draw(out);
+		GoToXY(0, 0);
 		break;
 	case Play:
 		gameBoard.Draw(out);
+		/*
+		GoToXY(40, 0);
+		cout << "(" << curPlayer->GetX() << "," << curPlayer->GetY() << ")";
+		*/
+		GoToXY(0, 0);
 		break;
 
 	}
 
-	//GoToXY(0, 0);
 	SetConsoleTextAttribute(console, Palette.Default);
 }
 
@@ -419,6 +483,12 @@ void KeyHandler(KEY_EVENT_RECORD e) {
 				NextTurn();
 			}
 			break;
+		case VK_SPACE:
+			if (state == Play) {
+				if (curPlayer->IsInRoom()) {
+					curPlayer->ExitRoom();
+				}
+			}
 		}
 	}
 }
@@ -436,7 +506,7 @@ void MouseHandler(MOUSE_EVENT_RECORD e) {
 		scrn = &mainMenu;
 		break;
 	default:
-		scrn = &mainMenu;
+		scrn = &gameBoard;
 		break;
 	}
 
@@ -448,9 +518,15 @@ void MouseHandler(MOUSE_EVENT_RECORD e) {
 
 	if (e.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED) {
 		for (int c = 0; c < scrn->GetNumButtons(); c++) {
-			if (btns[c].isOver(e.dwMousePosition) && e.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED) {
+			if (btns[c].isOver(e.dwMousePosition) && e.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED && !btns[c].IsDisabled()) {
 				ButtonHandler(btns[c].GetAction());
 			}
+		}
+	}
+
+	if (state == Play && curPlayer->IsInRoom()) {
+		if (curPlayer->OverExit(e.dwMousePosition) && e.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED) {
+			curPlayer->ExitRoom();
 		}
 	}
 }
@@ -465,8 +541,25 @@ void ButtonHandler(ACTION action) {
 	switch (action) {
 	case PLAY:
 		state = Play;
-		curPlayer->TurnStart();
+		curPlayer->TurnStart(gameBoard);
 		break;
+	case S_PASSAGE:
+		switch (curPlayer->GetRoom()) {
+		case Study:
+			curPlayer->EnterRoom(Kitchen, gameBoard);
+			break;
+		case Lounge:
+			curPlayer->EnterRoom(Conservatory, gameBoard);
+			break;
+		case Conservatory:
+			curPlayer->EnterRoom(Lounge, gameBoard);
+			break;
+		case Kitchen:
+			curPlayer->EnterRoom(Study, gameBoard);
+			break;
+		}
+		break;
+
 	case COLORS:
 		state = DEBUG;
 		clear();
@@ -510,5 +603,5 @@ void clear() {
 void NextTurn() {
 	curPlayer->TurnEnd();
 	curPlayer = gameBoard.NextPlayer();
-	curPlayer->TurnStart();
+	curPlayer->TurnStart(gameBoard);
 }
