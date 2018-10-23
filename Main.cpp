@@ -481,7 +481,6 @@ void ButtonHandler(ACTION action) {
 		state = DEBUG;
 		clear();
 		cout << "Instructions for who starts the game are whoever has Miss Scarlet (red) rolls the die and is the first to move. \n" 
-			"Clue game play is then continued to the player left of Miss Scarlet. \n"
 			"\n"
 			"Movement \n"
 			"Players move their suspect token across the squares the amount shown on the die in their roll.You may move your \n"
@@ -491,8 +490,10 @@ void ButtonHandler(ACTION action) {
 			"This rule does not apply to rooms as multiple players and weapons may occupy the same room. \n"
 			"\n"
 			"Rooms \n"
-			"The Clue board game rules state that there is one way to enter or exit a room : 1) entering through the doorway \n"
-			"by moving your token the number shown on the die across the squares, \n" 
+			"The Clue board game rules state that there are two ways to enter or exit a room : 1) entering through the doorway \n"
+			"by moving your token the number shown on the die across the squares, and too one of the doors. You then leave \n" 
+			"the room by going through any of the doors in that room. 2) Through the secret passage which is an option in some \n"
+			"of the rooms and will teleport you to another room. \n"
 			"\n"
 			"Guessing the Killer \n"
 			"Once a player enters a room, they are then eligible to make a “suggestion” on who committed the Clue game murder. \n"
