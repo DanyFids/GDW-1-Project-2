@@ -122,6 +122,8 @@
     <ClInclude Include="Deck.h" />
     <ClInclude Include="Enums.h" />
     <ClInclude Include="FunctionProto.h" />
+    <ClInclude Include="Logo.h" />
+    <ClInclude Include="Notes.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="UI.h" />
   </ItemGroup>

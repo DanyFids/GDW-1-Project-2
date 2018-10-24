@@ -38,5 +38,11 @@
     <ClInclude Include="FunctionProto.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="Notes.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Logo.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
