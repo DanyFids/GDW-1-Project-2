@@ -5,6 +5,12 @@ enum TileType {
 	Entrance
 };
 
+enum CardType {
+	Weap,
+	Char,
+	Room
+};
+
 enum Rooms {
 	Null,
 	Basement,
@@ -21,11 +27,11 @@ enum Rooms {
 
 enum Character {
 	Ms_Scarlet,
-	Prof_Plum,
+	Col_Mustard,
+	Ms_White,
 	Mr_Green,
 	Mrs_Peacock,
-	Col_Mustard,
-	Ms_White
+	Prof_Plum
 };
 
 enum Weapon {
@@ -48,7 +54,11 @@ enum Direction {
 enum GameState {
 	DEBUG,
 	Menu,
-	Play
+	Play,
+	Prediction,
+	Pause,
+	Share,
+	Warning
 };
 
 enum ACTION {
@@ -58,6 +68,16 @@ enum ACTION {
 	S_PASSAGE,
 	ROLL,
 	DISP_CONTROL,
+	RESET_MOVE,
+	END_TURN,
+	PREDICTION,
+	ACCUSE,
+	CANCEL,
+	P_WEAPON,
+	P_CHARACTER,
+	P_ROOMS,
+	START,
+	ACCEPT,
 
 	COLORS,
 	CHARACTERS,
