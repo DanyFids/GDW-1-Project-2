@@ -44,5 +44,8 @@
     <ClInclude Include="Logo.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="WinLoss.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
