@@ -11,6 +11,7 @@
 #include"Player.h"
 #include"Board.h"
 #include"Deck.h"
+#include"Suggestion.h"
 
 using namespace std;
 
@@ -22,6 +23,12 @@ private:
 	Rooms murderRoom;
 
 public:
+	Solution() {
+		murderWep = Candlestick;
+		murderer = Ms_Scarlet;
+		murderRoom = Hall;
+	}
+
 	Solution(Weapon w, Character c, Rooms r) {
 		murderWep = w;
 		murderer = c;
@@ -65,70 +72,70 @@ bool Player::move(Direction d, Board board) {
 	int nX = x, nY = y;
 	bool colision = false;
 
-	if (board.IsEntrance(x, y) && d == board.GetDir(x, y)) {
+	if (board.IsEntrance(x, y) && d == board.GetDir(x, y) && movePoints > 0 && board.GetRoom(x, y) != startRoom) {
 		inRoom = true;
 		room = board.GetRoom(x, y);
 		COORD roomC = board.GetRoomCoord(pChar, room);
 		x = roomC.X;
 		y = roomC.Y;
-		NextTurn();
+		canMove = false;
+		movePoints = 0;
+		board.EnablePrediction();
 	}
 	else {
-		if (!inRoom) {
-			switch (d) {
-			case Up:
-				if (y > 0)
-					nY = y - 1;
-				break;
-			case Down:
-				if (y < BOARD_D)
-					nY = y + 1;
-				break;
-			case Right:
-				if (x < BOARD_D)
-					nX = x + 1;
-				break;
-			case Left:
-				if (x > 0)
-					nX = x - 1;
-				break;
-			}
+		if (movePoints > 0) {
+			if (!inRoom) {
+				switch (d) {
+				case Up:
+					if (y > 0)
+						nY = y - 1;
+					break;
+				case Down:
+					if (y < BOARD_D)
+						nY = y + 1;
+					break;
+				case Right:
+					if (x < BOARD_D)
+						nX = x + 1;
+					break;
+				case Left:
+					if (x > 0)
+						nX = x - 1;
+					break;
+				}
 
-			if (board.IsWall(nX, nY)) {
-				colision = true;
-			}
-
-			Player * players = board.getPlayers();
-			for (int c = 0; c < board.NumPlayers(); c++) {
-				if (nX == players[c].GetX() && nY == players[c].GetY()) {
+				if (board.IsWall(nX, nY)) {
 					colision = true;
 				}
-			}
 
-			if (!colision) {
-				x = nX;
-				y = nY;
-				movePoints--;
+				Player * players = board.getPlayers();
+				for (int c = 0; c < board.NumPlayers(); c++) {
+					if (nX == players[c].GetX() && nY == players[c].GetY()) {
+						colision = true;
+					}
+				}
 
-				if (movePoints <= 0) {
-					NextTurn();
+				if (!colision) {
+					x = nX;
+					y = nY;
+					movePoints--;
 				}
 			}
-		}
-		else {
-			switch (d) {
-			case Right:
-				selectExit++;
-				if (selectExit >= numExits) {
-					selectExit = 0;
+			else {
+				switch (d) {
+				case Right:
+					selectExit++;
+					if (selectExit >= numExits) {
+						selectExit = 0;
+					}
+					break;
+				case Left:
+					selectExit--;
+					if (selectExit < 0) {
+						selectExit = numExits - 1;
+					}
+					break;
 				}
-				break;
-			case Left:
-				selectExit--;
-				if (selectExit < 0) {
-					selectExit = numExits - 1;
-				}
-				break;
 			}
 		}
 	}
@@ -144,19 +151,47 @@ void Player::EnterRoom(Rooms r, Board b) {
 	y = roomC.Y;
 	b.GetExits(room, numExits, Exits);
 	selectExit = -1;
-	NextTurn();
+	movePoints = 0;
+	canMove = false;
+	b.DisableRoll();
+	b.DisableSecretPassage();
+	b.EnablePrediction();
+}
+
+void Player::ExitRoom(Board b) {
+	if (selectExit != -1) {
+		COORD exit = Exits[selectExit];
+		x = exit.X;
+		y = exit.Y;
+
+		inRoom = false;
+		room = Null;
+		movePoints--;
+		b.DisableSecretPassage();
+		b.DisablePrediction();
+	}
 }
 
 void Player::TurnStart(Board board) {
 	blinkTimer = 0;
-	movePoints = 6;
 	isTurn = true;
+	canMove = false;
+	board.EnableRoll();
 
 	if (inRoom) {
 		board.GetExits(room, numExits, Exits);
 		selectExit = -1;
+		startXY.X = 0;
+		startXY.Y = 0;
+		startRoom = room;
+	}
+	else {
+		startRoom = Null;
+		startXY.X = x;
+		startXY.Y = y;
 	}
 }
+
 
 // GLOBAL VARIABLES
 
@@ -170,6 +205,7 @@ Rooms RoomCards[] = { Hall, Lounge, Study, Library, BilliardRoom, Conservatory, 
 Deck<Weapon, 6> WeaponDeck(WeapCards);
 Deck<Character, 6> CharacterDeck(CharCards);
 Deck<Rooms, 9> RoomDeck(RoomCards);
+Deck<COORD, 18> InPlayDeck;
 
 HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
 HANDLE inputH;
@@ -177,8 +213,11 @@ COORD CursorLoc, KeyLoc, EndLoc;
 
 //Screens
 MainMenu mainMenu;
-
 Board gameBoard;
+Suggestion prediction;
+ShareInfo reveal;
+
+Solution answer;
 
 bool play = true;
 
@@ -187,9 +226,19 @@ Player *curPlayer = gameBoard.GetCurrentPlayer();
 int main() {
 	SetConsoleCP(437);
 
+	//set random seed
+	srand((unsigned int)time(NULL));
+
 	const int inputR_SIZE = 128;
 	DWORD iNumRead, consoleModeSave, consoleMode;
 	INPUT_RECORD inputR[inputR_SIZE];
+
+	//hide cursor
+	CONSOLE_CURSOR_INFO cursor;
+	GetConsoleCursorInfo(console, & cursor);
+	cursor.bVisible = false;
+	SetConsoleCursorInfo(console, & cursor);
+
 
 	inputH = GetStdHandle(STD_INPUT_HANDLE);
 
@@ -215,6 +264,8 @@ int main() {
 	if (!SetConsoleMode(inputH, consoleMode)) {
 		return 103;
 	}
+
+	StartGame();
 
 	while (play) {
 		DWORD unreadInputs;
@@ -310,7 +361,14 @@ void Draw(HANDLE out) {
 		*/
 		GoToXY(0, 0);
 		break;
-
+	case Prediction:
+		prediction.Draw(out);
+		GoToXY(0, 0);
+		break;
+	case Share:
+		reveal.Draw(out);
+		GoToXY(0, 0);
+		break;
 	}
 
 	SetConsoleTextAttribute(console, Palette.Default);
@@ -486,9 +544,13 @@ void KeyHandler(KEY_EVENT_RECORD e) {
 		case VK_SPACE:
 			if (state == Play) {
 				if (curPlayer->IsInRoom()) {
-					curPlayer->ExitRoom();
+					curPlayer->ExitRoom(gameBoard);
 				}
 			}
+			break;
+		case 0x50: // P key
+			PromptPlayer(Ms_Scarlet);
+			break;
 		}
 	}
 }
@@ -505,8 +567,17 @@ void MouseHandler(MOUSE_EVENT_RECORD e) {
 	case Menu:
 		scrn = &mainMenu;
 		break;
-	default:
+	case Play:
 		scrn = &gameBoard;
+		break;
+	case Prediction:
+		scrn = &prediction;
+		break;
+	case Share:
+		scrn = &reveal;
+		break;
+	default:
+		scrn = &mainMenu;
 		break;
 	}
 
@@ -519,14 +590,14 @@ void MouseHandler(MOUSE_EVENT_RECORD e) {
 	if (e.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED) {
 		for (int c = 0; c < scrn->GetNumButtons(); c++) {
 			if (btns[c].isOver(e.dwMousePosition) && e.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED && !btns[c].IsDisabled()) {
-				ButtonHandler(btns[c].GetAction());
+				ButtonHandler(btns[c].GetAction(), btns[c].GetExtra());
 			}
 		}
 	}
 
 	if (state == Play && curPlayer->IsInRoom()) {
 		if (curPlayer->OverExit(e.dwMousePosition) && e.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED) {
-			curPlayer->ExitRoom();
+			curPlayer->ExitRoom(gameBoard);
 		}
 	}
 }
@@ -537,7 +608,8 @@ void MouseHandler(MOUSE_EVENT_RECORD e) {
 	Handles Action from Button
 */
 
-void ButtonHandler(ACTION action) {
+void ButtonHandler(ACTION action, int extra) {
+	int roll = 0;
 	switch (action) {
 	case PLAY:
 		state = Play;
@@ -558,6 +630,7 @@ void ButtonHandler(ACTION action) {
 			curPlayer->EnterRoom(Study, gameBoard);
 			break;
 		}
+		gameBoard.DisableSecretPassage();
 		break;
 
 	case COLORS:
@@ -569,6 +642,80 @@ void ButtonHandler(ACTION action) {
 		state = DEBUG;
 		clear();
 		displayChars();
+		break;
+	case ROLL:
+		roll = RollDie();
+		curPlayer->CanMove();
+		curPlayer->SetStartMove(roll);
+		movePoints = roll;
+		gameBoard.DisableRoll();
+		break;
+	case RESET_MOVE:
+		ResetMove();
+		break;
+	case END_TURN:
+		NextTurn();
+		break;
+	case PREDICTION:
+		state = Prediction;
+		prediction.LoadNotes(curPlayer->GetNotes());
+		prediction.ClearArea();
+		if (extra == 0) {
+			prediction.SetupPrediction(curPlayer->GetRoom());
+		}
+		else {
+			prediction.SetupAccusation();
+		}
+		break;
+	case P_WEAPON:
+		if (state == Prediction) {
+			prediction.Select((Weapon)extra);
+		}
+		else if (state == Share) {
+			COORD card;
+			card.X = 0;
+			card.Y = extra;
+			reveal.RevealCard(console, card);
+			curPlayer->AddDiscovery(card);
+			state = Play;
+		}
+		break;
+	case P_CHARACTER:
+		if (state == Prediction) {
+			prediction.Select((Character)extra);
+		}
+		else if (state == Share) {
+			COORD card;
+			card.X = 1;
+			card.Y = extra;
+			reveal.RevealCard(console, card);
+			curPlayer->AddDiscovery(card);
+			state = Play;
+		}
+		break;
+	case P_ROOMS:
+		if (state == Prediction) {
+			prediction.Select((Rooms)extra);
+		}
+		else if(state == Share){
+			COORD card;
+			card.X = 2;
+			card.Y = extra;
+			reveal.RevealCard(console, card);
+			curPlayer->AddDiscovery(card);
+			state = Play;
+		}
+		break;
+	case CANCEL:
+		switch (state) {
+		case Prediction:
+			state = Play;
+			clear();
+			break;
+		}
+		break;
+	case ACCUSE:
+		Accuse();
 		break;
 	}
 }
@@ -600,8 +747,243 @@ void clear() {
 	SetConsoleCursorPosition(console, origin);
 }
 
+void StartGame() {
+	Character pChars[] = { Prof_Plum, Mr_Green, Ms_Scarlet, Ms_White };
+	gameBoard.SetBoard(pChars, 4);
+
+	WeaponDeck.shuffle();
+	CharacterDeck.shuffle();
+	RoomDeck.shuffle();
+
+	answer = Solution(WeaponDeck.draw(), CharacterDeck.draw(), RoomDeck.draw());
+
+	int numCards = 0;
+	COORD tempDeck[18];
+	while (WeaponDeck.checkDeck()) {
+		COORD temp;
+		temp.X = Weap;
+		temp.Y = WeaponDeck.draw();
+		tempDeck[numCards] = temp;
+		numCards++;
+	}
+
+	while (CharacterDeck.checkDeck()) {
+		COORD temp;
+		temp.X = Char;
+		temp.Y = CharacterDeck.draw();
+		tempDeck[numCards] = temp;
+		numCards++;
+	}
+
+	while (RoomDeck.checkDeck()) {
+		COORD temp;
+		temp.X = Room;
+		temp.Y = RoomDeck.draw();
+		tempDeck[numCards] = temp;
+		numCards++;
+	}
+
+	InPlayDeck = Deck<COORD, 18>(tempDeck);
+	Player* players = gameBoard.getPlayers();
+	int playerId = 0;
+
+	while (InPlayDeck.checkDeck()) {
+		players[playerId].GiveCard(InPlayDeck.draw());
+		playerId++;
+
+		if (playerId >= gameBoard.NumPlayers()) {
+			playerId = 0;
+		}
+	}
+
+}
+
 void NextTurn() {
 	curPlayer->TurnEnd();
 	curPlayer = gameBoard.NextPlayer();
 	curPlayer->TurnStart(gameBoard);
+	movePoints = 0;
+}
+
+void ResetMove() {
+	if (curPlayer->GetStartRoom() != Null) {
+		curPlayer->EnterRoom(curPlayer->GetStartRoom(), gameBoard);
+	}
+	else {
+		COORD XY = curPlayer->GetStartXY();
+		curPlayer->SetInRoom(false);
+		curPlayer->SetXY(XY.X, XY.Y);
+		
+	}
+	movePoints = curPlayer->GetStartMove();
+	curPlayer->CanMove();
+}
+
+int RollDie() {
+	int randomNum;
+	randomNum = rand() % 6 + 1;
+	cout << randomNum << endl;
+	return randomNum;
+}
+
+void Accuse() {
+	if (prediction.Ready()) {
+		Weapon wGuess;
+		Character cGuess;
+		Rooms rGuess;
+
+		prediction.GetGuess(wGuess, cGuess, rGuess);
+
+		Player * players = gameBoard.getPlayers();
+
+		int numP = gameBoard.NumPlayers();
+
+		for (int p = 0; p < numP; p++) {
+			if (players[p].GetChar() == cGuess) {
+				players[p].EnterRoom(rGuess, gameBoard);
+			}
+		}
+
+		int curId = gameBoard.GetCurPlayerId();
+		COORD cards[3];
+		int numCards = 0;
+
+		bool cardFound = false;
+
+		for (int p = curId; p < numP + curId; p++) {
+			int pId;
+			if (p >= numP) {
+				pId = p - numP;
+			}
+			else {
+				pId = p;
+			}
+
+			int handSize;
+			COORD hand[10];
+			players[pId].GetHand(hand, handSize);
+
+			if (pId != curId) {
+
+				for (int c = 0; c < handSize; c++) {
+					if ((hand[c].X == 0 && (Weapon)hand[c].Y == wGuess) ||
+						(hand[c].X == 1 && (Character)hand[c].Y == cGuess) ||
+						(hand[c].X == 2 && (Rooms)hand[c].Y == rGuess)) {
+						cards[numCards] = hand[c];
+						numCards++;
+					}
+
+				}
+				if (numCards > 0) {
+					cardFound = true;
+					clear();
+					gameBoard.Draw(console);
+					Show(players[pId].GetChar(), cards, numCards);
+					break;
+				}
+			}
+		}
+
+		if (!cardFound) {
+			state = Play;
+			clear();
+		}
+
+		gameBoard.DisablePrediction();
+	}
+}
+
+void DrawPrompt() {
+	clear();
+	gameBoard.Draw(console);
+
+	string top = { ' ', (char)201, (char)205, (char)205, (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)187, ' ' };
+	string mid = { ' ', (char)186, ' ', ' ', ' ' , ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', (char)186, ' ' };
+	string bot = { ' ', (char)200, (char)205, (char)205, (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)188, ' ' };
+	string buffer = { ' ', ' ', ' ', ' ', ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' };
+
+	GoToXY(30, 4);
+	cout << buffer;
+	for (int i = 0; i < 6; i++) {
+		GoToXY(30, 5 + i);
+		if (i == 0) {
+			cout << top;
+		}
+		else if (i == 5) {
+			cout << bot;
+		}
+		else {
+			cout << mid;
+		}
+	}
+	GoToXY(30, 11);
+	cout << buffer;
+}
+
+void Show(Character p, COORD cards[], int numC) {
+	PromptPlayer(p);
+
+	DrawPrompt();
+
+	GoToXY(33, 6);
+	cout << "Reveal to ";
+	SetConsoleTextAttribute(console, GetColor(curPlayer->GetChar()));
+	cout << toString(curPlayer->GetChar());
+	SetConsoleTextAttribute(console, Palette.Default);
+
+	reveal.LoadButtons(cards, numC);
+	reveal.LoadCharacters(curPlayer->GetChar(), p);
+	state = Share;
+}
+
+/***************************
+		PromptPlayer
+****************************
+	Prompts Current user to switch with the next User based on player Character
+*/
+void PromptPlayer(Character c) {
+	DrawPrompt();
+
+	GoToXY(33, 7);
+	cout << "  Switch with ";
+	SetConsoleTextAttribute(console, GetColor(c));
+	cout << toString(c);
+	SetConsoleTextAttribute(console, Palette.Default);
+
+	GoToXY(33, 9);
+	cout << "Press any key to continue...";
+
+	const int inputR_SIZE = 128;
+	INPUT_RECORD inputR[inputR_SIZE];
+	DWORD iNumRead;
+
+	//Clear input buffer
+	ReadConsoleInput(
+		inputH,
+		inputR,
+		inputR_SIZE,
+		&iNumRead
+	);
+
+	while (true) {
+		ReadConsoleInput(
+			inputH,
+			inputR,
+			inputR_SIZE,
+			&iNumRead
+		);
+
+		if (iNumRead > 0) {
+			bool keyHit = false;
+			for (DWORD c = 0; c < iNumRead; c++) {
+				if (inputR[c].EventType == KEY_EVENT) {
+					keyHit = true;
+				}
+			}
+			if(keyHit)
+				break;
+		}
+	}
+
+	clear();
 }

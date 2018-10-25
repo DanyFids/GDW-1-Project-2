@@ -1,15 +1,22 @@
 #pragma once
+#include<ctime>
+
 using namespace std;
 // Deck
 template <class T, int Size>
 class Deck {
 private:
-	T *cards;
+	T cards[Size];
 	int topId = 0;
 	int deckSize = Size;
 public:
+	Deck() {
+	}
+
 	Deck(T c[]) {
-		cards = c;
+		for (int i = 0; i < deckSize; i++) {
+			cards[i] = c[i];
+		}
 
 		shuffle();
 	}
@@ -36,15 +43,31 @@ public:
 
 	void shuffle() {
 		random_device gen;
-		uniform_int_distribution<int> range(0, deckSize - 1);
-
 		topId = 0;
 
+		T newDeck[Size];
+		T oldDeck[Size];
+		//init dummy deck;
+		for (int i = 0; i < deckSize; i++) {
+			oldDeck[i] = cards[i];
+		}
+
+		int oldDeckSize = deckSize;
+
 		for (int c = 0; c < deckSize; c++) {
+			uniform_int_distribution<int> range(0, oldDeckSize - 1);
 			int d = range(gen);
-			T hold = cards[d];
-			cards[d] = cards[c];
-			cards[c] = hold;
+			newDeck[c] = oldDeck[d];
+
+			for (int o = d; o < oldDeckSize - 1; o++) {
+				oldDeck[o] = oldDeck[o + 1];
+			}
+
+			oldDeckSize--;
+		}
+
+		for (int t = 0; t < deckSize; t++) {
+			cards[t] = newDeck[t];
 		}
 	}
 };

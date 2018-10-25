@@ -2,8 +2,7 @@
 
 using namespace std;
 
-class Colors {
-public:
+struct Colors {
 	const int Default = 7;
 	const int Scarlet = 4;
 	const int Mustard = 6;
@@ -23,6 +22,7 @@ private:
 	string text;
 	ACTION action;
 	int size, x, y;
+	int extra;
 	bool hov = false;
 	bool disabled = false;
 public:
@@ -32,14 +32,16 @@ public:
 		x = 0;
 		y = 0;
 		size = text.length();
+		extra = 0;
 	}
 
-	Button(string t, int x, int y, ACTION a) {
+	Button(string t, int x, int y, ACTION a, int e = 0) {
 		text = t;
 		action = a;
 		this->x = x;
 		this->y = y;
 		size = text.length();
+		extra = e;
 	}
 
 	bool isOver(COORD pos) {
@@ -53,6 +55,10 @@ public:
 
 	ACTION GetAction() {
 		return action;
+	}
+
+	int GetExtra() {
+		return extra;
 	}
 
 	void draw(HANDLE out) {
