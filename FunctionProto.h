@@ -25,3 +25,4 @@ void DrawPrompt();
 void Accuse();
 void Show(Character p, COORD cards[], int numC);
 void PromptPlayer(Character c);
+void LastGuess();

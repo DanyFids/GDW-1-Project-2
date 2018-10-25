@@ -76,6 +76,9 @@ private:
 	COORD entrances[11][4];
 	int numExits[11] = {};
 
+	int deadPlayers[6] = {};
+	int numDead = 0;
+
 	static const int NUM_BUTTONS = 7;
 	Button buttons[NUM_BUTTONS] = {
 		Button("  View Notes  ", 56, 5, NOTES), 
@@ -553,6 +556,23 @@ public:
 		if (curPlayerId >= numPlayers) {
 			curPlayerId = 0;
 		}
+
+		while (true) {
+			bool isDead = false;
+			for (int d = 0; d < numDead; d++) {
+				if (curPlayerId == deadPlayers[d])
+					isDead = true;
+			}
+			if (isDead) {
+				curPlayerId++;
+				if (curPlayerId >= numPlayers) {
+					curPlayerId = 0;
+				}
+			}
+			else
+				break;
+		}
+
 		if (players[curPlayerId].IsInRoom()) {
 			Rooms r = players[curPlayerId].GetRoom();
 			if (r == Study || r == Lounge || r == Conservatory || r == Kitchen) {
@@ -644,7 +664,7 @@ public:
 			break;
 		case Mrs_Peacock:
 			temp.X = 0;
-			temp.Y = 14;
+			temp.Y = 18;
 			break;
 		case Prof_Plum:
 			temp.X = 0;
@@ -704,5 +724,23 @@ public:
 
 	void EnableResetMv() {
 		ResetMvBtn->Enable();
+	}
+
+	void EnableSecretPass() {
+		sPassageBtn->Enable();
+	}
+
+	void KillPlayer() {
+		deadPlayers[numDead] = curPlayerId;
+		numDead++;
+	}
+
+	bool CheckGameOver() {
+		if (numDead == numPlayers) {
+			return true;
+		}
+		else {
+			return false;
+		}
 	}
 };

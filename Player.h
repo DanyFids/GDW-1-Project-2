@@ -32,6 +32,8 @@ private:
 	int numExits;
 	int selectExit = -1;
 
+	bool wasMoved = false;
+
 	Notes notes;
 
 	Rooms startRoom;
@@ -255,5 +257,17 @@ public:
 
 	Notes GetNotes() {
 		return notes;
+	}
+
+	bool CheckWasMoved() {
+		bool ret = wasMoved;
+		if (wasMoved) {
+			wasMoved = false;
+		}
+		return ret;
+	}
+
+	void SetWasMoved(bool b) {
+		wasMoved = b;
 	}
 };

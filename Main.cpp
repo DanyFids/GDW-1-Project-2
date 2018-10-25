@@ -155,7 +155,12 @@ void Player::EnterRoom(Rooms r, Board b) {
 	canMove = false;
 	b.DisableRoll();
 	b.DisableSecretPassage();
-	b.EnablePrediction();
+	if (r != Basement) {
+		b.EnablePrediction();
+	}
+	else {
+		LastGuess();
+	}
 }
 
 void Player::ExitRoom(Board b) {
@@ -649,6 +654,7 @@ void ButtonHandler(ACTION action, int extra) {
 		curPlayer->SetStartMove(roll);
 		movePoints = roll;
 		gameBoard.DisableRoll();
+		gameBoard.DisablePrediction();
 		break;
 	case RESET_MOVE:
 		ResetMove();
@@ -712,10 +718,23 @@ void ButtonHandler(ACTION action, int extra) {
 			state = Play;
 			clear();
 			break;
+		case Warning:
+			state = Play;
+			clear();
+			ResetMove();
+			break;
 		}
 		break;
+	case ACCEPT:
+		switch (state) {
+		case Warning:
+			prediction.SetupAccusation();
+			state = Prediction;
+		}
 	case ACCUSE:
 		Accuse();
+		gameBoard.DisablePrediction();
+		gameBoard.DisableResetMv();
 		break;
 	}
 }
@@ -748,7 +767,7 @@ void clear() {
 }
 
 void StartGame() {
-	Character pChars[] = { Prof_Plum, Mr_Green, Ms_Scarlet, Ms_White };
+	Character pChars[] = { Mr_Green, Ms_Scarlet, Ms_White, Col_Mustard};
 	gameBoard.SetBoard(pChars, 4);
 
 	WeaponDeck.shuffle();
@@ -803,11 +822,20 @@ void NextTurn() {
 	curPlayer = gameBoard.NextPlayer();
 	curPlayer->TurnStart(gameBoard);
 	movePoints = 0;
+	gameBoard.EnableResetMv();
+	gameBoard.DisablePrediction();
+	if (curPlayer->CheckWasMoved()) {
+		gameBoard.EnablePrediction();
+	}
+	PromptPlayer(curPlayer->GetChar());
 }
 
 void ResetMove() {
 	if (curPlayer->GetStartRoom() != Null) {
 		curPlayer->EnterRoom(curPlayer->GetStartRoom(), gameBoard);
+		if (curPlayer->GetStartRoom() == Study || curPlayer->GetStartRoom() == Lounge || curPlayer->GetStartRoom() == Kitchen || curPlayer->GetStartRoom() == Conservatory) {
+			gameBoard.EnableSecretPass();
+		}
 	}
 	else {
 		COORD XY = curPlayer->GetStartXY();
@@ -815,6 +843,7 @@ void ResetMove() {
 		curPlayer->SetXY(XY.X, XY.Y);
 		
 	}
+	gameBoard.DisablePrediction();
 	movePoints = curPlayer->GetStartMove();
 	curPlayer->CanMove();
 }
@@ -841,6 +870,7 @@ void Accuse() {
 		for (int p = 0; p < numP; p++) {
 			if (players[p].GetChar() == cGuess) {
 				players[p].EnterRoom(rGuess, gameBoard);
+				players[p].SetWasMoved(true);
 			}
 		}
 
@@ -976,7 +1006,7 @@ void PromptPlayer(Character c) {
 		if (iNumRead > 0) {
 			bool keyHit = false;
 			for (DWORD c = 0; c < iNumRead; c++) {
-				if (inputR[c].EventType == KEY_EVENT) {
+				if (inputR[c].EventType == KEY_EVENT || (inputR[c].EventType == MOUSE_EVENT && inputR[c].Event.MouseEvent.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED)) {
 					keyHit = true;
 				}
 			}
@@ -986,4 +1016,14 @@ void PromptPlayer(Character c) {
 	}
 
 	clear();
+}
+
+void LastGuess() {
+	DrawPrompt();
+
+	GoToXY(33, 6);
+	SetConsoleTextAttribute(console, 12);
+	cout << "WARNING! Entering the BASEMENT will trigger your FINAL ACCUSATION. There's NO GOING BACK.";
+
+	state = Warning;
 }

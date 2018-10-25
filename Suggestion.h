@@ -285,7 +285,7 @@ public:
 			if (iNumRead > 0) {
 				bool keyHit = false;
 				for (DWORD c = 0; c < iNumRead; c++) {
-					if (inputR[c].EventType == KEY_EVENT) {
+					if (inputR[c].EventType == KEY_EVENT || (inputR[c].EventType == MOUSE_EVENT && inputR[c].Event.MouseEvent.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED)) {
 						keyHit = true;
 					}
 				}
@@ -295,5 +295,24 @@ public:
 		}
 
 		clear();
+	}
+};
+
+class Warning :public Screen {
+private:
+	static const int NUM_BUTTONS = 2;
+	Button buttons[NUM_BUTTONS] = {
+		Button("Accept", 33,9, ACCEPT),
+		Button("Cancel", 42,9, CANCEL)
+	};
+private:
+	Warning() {
+		SetNumButtons(NUM_BUTTONS);
+	}
+
+	void Draw(HANDLE out) {
+		for (int b = 0; b < NUM_BUTTONS; b++) {
+			buttons[b].draw(out);
+		}
 	}
 };
