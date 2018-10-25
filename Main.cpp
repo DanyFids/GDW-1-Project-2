@@ -42,8 +42,8 @@ public:
 
 class MainMenu :public Screen {
 private:
-	static const int NUM_BUTTONS = 3;
-	Button buttons[NUM_BUTTONS] = {Button("Play!", 30, 10, PLAY), Button("Colors", 30, 12, COLORS), Button("Chars", 30, 14, CHARACTERS)};
+	static const int NUM_BUTTONS = 4;
+	Button buttons[NUM_BUTTONS] = {Button("Play!", 30, 10, PLAY), Button("Colors", 30, 12, COLORS), Button("Chars", 30, 14, CHARACTERS), Button("Rules", 30, 16, RULES)};
 public:
 	MainMenu() {
 		SetNumButtons(NUM_BUTTONS);
@@ -569,6 +569,42 @@ void ButtonHandler(ACTION action) {
 		state = DEBUG;
 		clear();
 		displayChars();
+		break;
+	case RULES:
+		state = DEBUG;
+		clear();
+		cout << "Instructions for who starts the game are whoever has Miss Scarlet (red) rolls the die and is the first to move. \n" 
+			"\n"
+			"Movement \n"
+			"Players move their suspect token across the squares the amount shown on the die in their roll.You may move your \n"
+			"token forwards, backwards or sideways all in one turn using the arrow keys. \n"
+			"Moving your token diagonally is against the Clue rules.You cannot move your token to a particular space twice in the \n" 
+			"same turn nor occupy or move through the same square as another player. \n"
+			"This rule does not apply to rooms as multiple players and weapons may occupy the same room. \n"
+			"\n"
+			"Rooms \n"
+			"The Clue board game rules state that there are two ways to enter or exit a room : 1) entering through the doorway \n"
+			"by moving your token the number shown on the die across the squares, and too one of the doors. You then leave \n" 
+			"the room by going through any of the doors in that room. 2) Through the secret passage which is an option in some \n"
+			"of the rooms and will teleport you to another room. \n"
+			"\n"
+			"Guessing the Killer \n"
+			"Once a player enters a room, they are then eligible to make a “suggestion” on who committed the Clue game murder. \n"
+			"This is done when the player names a Suspect, a Weapon, and the Room \n"
+			"that they are currently in(“I suggest that the crime was committed in the Library, by Prof.Plum with the Rope”). \n"
+			"Forfeiting or not taking your turn is against the rules; all players must roll the die.After entering a room and \n"
+			"making a suggestions, you may not make another suggestions until entering \n"
+			"another room or using at least two turns(leaving and then re - entering the same room). \n"
+			"\n"
+			"It is not against the rules, to deliberately make a \n"
+			"Suggestion naming one or two cards that you hold in your own hand to mislead \n"
+			"other players or to narrow your search for one specific suspect, room, or weapon. \n"
+			"\n"
+			"When an Accusation is made, the player(on their turn) states that an Accusation is being made and states the three \n"
+			"cards that he thinks committed the murder.The game will then say if the guess was correct or wrong. \n"
+			"Unlike the previously stated rules, a player may make an accusation whether or not their token is in the room they \n"
+			"mention.If the 3 cards named are correct \n"
+			"that player is the winner.If the accusation is wrong, they lose the game. \n" << endl;
 		break;
 	}
 }
