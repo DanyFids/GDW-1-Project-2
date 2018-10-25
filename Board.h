@@ -76,27 +76,37 @@ private:
 	COORD entrances[11][4];
 	int numExits[11] = {};
 
-	static const int NUM_BUTTONS = 4;
+	int deadPlayers[6] = {};
+	int numDead = 0;
+
+	static const int NUM_BUTTONS = 7;
 	Button buttons[NUM_BUTTONS] = {
 		Button("  View Notes  ", 56, 5, NOTES), 
 		Button("Secret Passage", 56, 6, S_PASSAGE), 
 		Button("   Controls   ", 56, 4, DISP_CONTROL), 
-		Button("   Roll Die   ", 56, 3, ROLL)};
+		Button("   Roll Die   ", 56, 3, ROLL),
+		Button("   Go Back    ", 56, 7, RESET_MOVE),
+		Button("  Prediction  ", 56, 8, PREDICTION),
+		Button("   End Turn   ", 56, 9, END_TURN)
+	};
 	Button* rollBtn = &buttons[3];
 	Button* sPassageBtn = &buttons[1];
+	Button* predictBtn = &buttons[5];
+	Button* ResetMvBtn = &buttons[4];
 
 	static const int UILines = 11;
 	string UILayout[UILines] = {
 		{(char) 201 , 'M', 'o', 'v', 'e', (char)205, (char)187 },
 		{(char) 186, ' ', ' ', ' ', ' ', ' ', (char) 186},
 		{(char) 204, 'A', 'c', 't', 'i', 'o', 'n', 's', (char) 205, (char)205 , (char)205, (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205, (char)187 },
-		{(char)186, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', (char)186},
-		{(char)186, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', (char)186},
-		{(char)186, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', (char)186},
-		{(char)186, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', (char)186},
-		{(char)186, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', (char)186},
-		{(char)186, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', (char)186},
-		{(char)186, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', (char)186},
+		{(char)186},
+		{(char)186},
+		{(char)186},
+		{(char)186},
+		{(char)186},
+		{(char)186},
+		{(char)186},
+		//{(char)186, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', (char)186},
 		{(char)200, (char)205, (char)205 , (char)205, (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205, (char)205, (char)205 , (char)205, (char)205, (char) 188}
 
 	};
@@ -109,7 +119,7 @@ public:
 		SetNumButtons(NUM_BUTTONS);
 
 		sPassageBtn->Disable();
-		rollBtn->Disable();
+		predictBtn->Disable();
 		buttons[0].Disable();
 		buttons[2].Disable();
 
@@ -520,8 +530,15 @@ public:
 
 		SetConsoleTextAttribute(out, Palette.Default);
 		for (int u = 0; u < UILines; u++) {
-			GoToXY(55,u);
+			GoToXY(55, u);
 			cout << UILayout[u];
+			if (u <= 9 && u >= 3) {
+				GoToXY(72, u);
+				cout << UILayout[u];
+			}
+			else if (u == 1) {
+
+			}
 		}
 
 		if (movePoints > 0) {
@@ -539,6 +556,23 @@ public:
 		if (curPlayerId >= numPlayers) {
 			curPlayerId = 0;
 		}
+
+		while (true) {
+			bool isDead = false;
+			for (int d = 0; d < numDead; d++) {
+				if (curPlayerId == deadPlayers[d])
+					isDead = true;
+			}
+			if (isDead) {
+				curPlayerId++;
+				if (curPlayerId >= numPlayers) {
+					curPlayerId = 0;
+				}
+			}
+			else
+				break;
+		}
+
 		if (players[curPlayerId].IsInRoom()) {
 			Rooms r = players[curPlayerId].GetRoom();
 			if (r == Study || r == Lounge || r == Conservatory || r == Kitchen) {
@@ -575,6 +609,10 @@ public:
 		return numPlayers;
 	}
 
+	int GetCurPlayerId() {
+		return curPlayerId;
+	}
+
 	Player* getPlayers() {
 		return players;
 	}
@@ -603,5 +641,106 @@ public:
 
 	Button* GetButtons() {
 		return buttons;
+	}
+
+	COORD GetStartLoc(Character c) {
+		COORD temp;
+		switch (c) {
+		case Ms_Scarlet:
+			temp.X = 16;
+			temp.Y = 0;
+			break;
+		case Col_Mustard:
+			temp.X = 24;
+			temp.Y = 7;
+			break;
+		case Ms_White:
+			temp.X = 14;
+			temp.Y = 24;
+			break;
+		case Mr_Green:
+			temp.X = 9;
+			temp.Y = 24;
+			break;
+		case Mrs_Peacock:
+			temp.X = 0;
+			temp.Y = 18;
+			break;
+		case Prof_Plum:
+			temp.X = 0;
+			temp.Y = 5;
+			break;
+		}
+
+		return temp;
+	}
+
+	void SetBoard(Character p[], int numP) {
+		numPlayers = numP;
+
+		for (int i = 0; i < numP; i++) {
+			for (int j = i; j < numP; j++) {
+				if (i != j) {
+					if (p[j] < p[i]) {
+						Character temp = p[i];
+						p[i] = p[j];
+						p[j] = temp;
+					}
+				}
+			}
+		}
+
+		for (int c = 0; c < numP; c++) {
+			COORD start = GetStartLoc(p[c]);
+			Player temp = Player(p[c], start.X, start.Y);
+			players[c] = temp;
+		}
+		
+	}
+
+	void DisableRoll() {
+		rollBtn->Disable();
+	}
+
+	void EnableRoll() {
+		rollBtn->Enable();
+	}
+
+	void DisableSecretPassage() {
+		sPassageBtn->Disable();
+	}
+
+	void EnablePrediction() {
+		predictBtn->Enable();
+	}
+
+	void DisablePrediction() {
+		predictBtn->Disable();
+	}
+
+	void DisableResetMv() {
+		ResetMvBtn->Disable();
+	}
+
+	void EnableResetMv() {
+		ResetMvBtn->Enable();
+	}
+
+	void EnableSecretPass() {
+		sPassageBtn->Enable();
+	}
+
+	void KillPlayer() {
+		deadPlayers[numDead] = curPlayerId;
+		numDead++;
+	}
+
+	bool CheckGameOver() {
+		if (numDead == numPlayers) {
+			return true;
+		}
+		else {
+			return false;
+		}
 	}
 };
