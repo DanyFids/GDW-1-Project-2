@@ -16,20 +16,20 @@ void logo();
 
 void logo() {
 
-		int bottomLeft = 192;
-		int	bottomRight = 218;
-		int topLeft = 217;
-		int topRight = 191;
+	std::cout << "                              TEAM XI'S";
 
-		std::cout << (char)192;
-		std::cout
-		<< " __________        ___               ___      ___       __________" << std::endl
-		<< "|    ______|      |   |             |   |    |   |     |     _____|" << std::endl
-		<< "|   |             |   |             |   |    |   |     |    |" << std::endl
-		<< "|   |             |   |             |   |    |   |     |    |_____" << std::endl
-		<< "|   |             |   |             |   |    |   |     |     _____|" << std::endl
-		<< "|   |______       |   |______       |   |____|   |     |    |_____" << std::endl
-		<< "|__________|      |__________|      |____________|     |__________|" << std::endl;
+	std::cout << std::endl << std::endl;
 
+	std::cout << (char)201 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)187 << "   " << (char)201 << (char)205 << (char)205 << (char)187 << "         " << (char)201 << (char)205 << (char)205 << (char)187 << "   " << (char)201 << (char)205 << (char)205 << (char)187 << "   " << (char)201 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)187 << "        _" << (char)201 << (char)205 << (char)205 << (char)205 << (char)187 << "_" << std::endl
+		<< (char)186 << "  " << (char)201 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)188 << "   " << (char)186 << "  " << (char)186 << "         " << (char)186 << "  " << (char)186 << "   " << (char)186 << "  " << (char)186 << "   " << (char)186 << "  " << (char)201 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)188 << "      _" << (char)186 << "\\      " << (char)186 << "__" << std::endl
+		<< (char)186 << "  " << (char)186 << "         " << (char)186 << "  " << (char)186 << "         " << (char)186 << "  " << (char)186 << "   " << (char)186 << "  " << (char)186 << "   " << (char)186 << "  " << (char)186 << "           " << (char)186 << "  \\\\        " << (char)186 << " __ " << (char)201 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)187 << std::endl
+		<< (char)186 << "  " << (char)186 << "         " << (char)186 << "  " << (char)186 << "         " << (char)186 << "  " << (char)186 << "   " << (char)186 << "  " << (char)186 << "   " << (char)186 << "  " << (char)200 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)187 << "    " << (char)186 << "    \\\\       " << (char)186 << (char)186 << "__" << (char)186 << "                " << (char)186 << std::endl
+		<< (char)186 << "  " << (char)186 << "         " << (char)186 << "  " << (char)186 << "         " << (char)186 << "  " << (char)186 << "   " << (char)186 << "  " << (char)186 << "   " << (char)186 << "  " << (char)201 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)188 << "    " << (char)186 << "_    \\\\     _" << (char)186 << "    " << (char)200 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)188 << std::endl
+		<< (char)186 << "  " << (char)200 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)187 << "   " << (char)186 << "  " << (char)200 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)187 << "   " << (char)186 << "  " << (char)200 << (char)205 << (char)205 << (char)205 << (char)188 << "  " << (char)186 << "   " << (char)186 << "  " << (char)200 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)187 << "     " << (char)186 << "_    \\\\   _" << (char)186 << std::endl
+		<< (char)200 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)188 << "   " << (char)200 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)188 << "   " << (char)200 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)188 << "   " << (char)200 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)205 << (char)188 << "       " << (char)186 << "_   \\\\ _" << (char)186 << std::endl
+		<< "                                                           " << (char)200 << (char)205 << (char)205 << (char)205 << (char)205 << (char)188
+		;
+
+	std::cout << "                              TEAM NAMES GO HERE";
 
 }
