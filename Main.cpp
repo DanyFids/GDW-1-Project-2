@@ -4,17 +4,31 @@
 #include<conio.h>
 #include<windows.h>
 #include<stdio.h>
+#pragma comment(lib, "Winmm.lib")
 //Our Classes
 #include"Enums.h"
 #include"FunctionProto.h"
 #include"UI.h"
 #include"Player.h"
+#include"Log.h"
 #include"Board.h"
 #include"Deck.h"
 #include"Suggestion.h"
 #include"Notes.h"
+#include"WinLoss.h"
+#include"Logo.h"
+#include"CharacterSelect.h"
 
 using namespace std;
+
+string Credits[6] = {
+	"-- DEVELOPPED BY --",
+	"Daniel Findleton",
+	"Tia Lee",
+	"Logan Soulliere",
+	"Brandon Chan",
+	"Daniela Moreira"
+};
 
 // Solution
 class Solution {
@@ -46,15 +60,44 @@ public:
 
 		return false;
 	}
+
+	Character GetChar() {
+		return murderer;
+	}
+
+	Rooms GetRoom() {
+		return murderRoom;
+	}
+
+	Weapon GetWeap() {
+		return murderWep;
+	}
+
+	void SetSolution(Weapon w, Character c, Rooms r) {
+		murderWep = w;
+		murderer = c;
+		murderRoom = r;
+	}
 };
 
 class MainMenu :public Screen {
 private:
-	static const int NUM_BUTTONS = 4;
-	Button buttons[NUM_BUTTONS] = {Button("Play!", 30, 10, PLAY), Button("Colors", 30, 12, COLORS), Button("Chars", 30, 14, CHARACTERS), Button("Rules", 30, 16, RULES)};
+	static const int NUM_BUTTONS = 5;
+	Button buttons[NUM_BUTTONS] = {
+		Button("Resume", 45, 10, PLAY),
+		Button("New Game", 45, 12, START),
+		//Button("Colors", 30, 12, COLORS), 
+		//Button("Chars", 30, 14, CHARACTERS), 
+		Button("Rules", 45, 14, RULES),
+		Button("Credits", 45, 16, CREDITS),
+		Button("Exit", 45, 18, EXIT)
+	};
+
+	Button * resumeBtn = &buttons[0];
 public:
 	MainMenu() {
 		SetNumButtons(NUM_BUTTONS);
+		resumeBtn->Disable();
 	}
 
 	Button* GetButtons() {
@@ -62,9 +105,19 @@ public:
 	}
 
 	void Draw(HANDLE out) {
+		DrawLogo(10, 1);
+
 		for (int c = 0; c < GetNumButtons(); c++) {
 			buttons[c].draw(out);
 		}
+	}
+
+	void EnableResume() {
+		resumeBtn->Enable();
+	}
+
+	void DisableResume() {
+		resumeBtn->Disable();
 	}
 };
 
@@ -81,7 +134,13 @@ bool Player::move(Direction d, Board board) {
 		y = roomC.Y;
 		canMove = false;
 		movePoints = 0;
-		board.EnablePrediction();
+		if (room != Basement) {
+			board.EnablePrediction();
+			board.EnableEndTurn();
+		}
+		else {
+			LastGuess();
+		}
 	}
 	else {
 		if (movePoints > 0) {
@@ -120,6 +179,9 @@ bool Player::move(Direction d, Board board) {
 					x = nX;
 					y = nY;
 					movePoints--;
+					if (movePoints == 0) {
+						board.EnableEndTurn();
+					}
 				}
 			}
 			else {
@@ -158,6 +220,7 @@ void Player::EnterRoom(Rooms r, Board b) {
 	b.DisableSecretPassage();
 	if (r != Basement) {
 		b.EnablePrediction();
+		b.EnableEndTurn();
 	}
 	else {
 		LastGuess();
@@ -173,8 +236,12 @@ void Player::ExitRoom(Board b) {
 		inRoom = false;
 		room = Null;
 		movePoints--;
+		if (movePoints == 0) {
+			board.EnableEndTurn();
+		}
 		b.DisableSecretPassage();
 		b.DisablePrediction();
+		b.primeUpdate();
 	}
 }
 
@@ -183,6 +250,8 @@ void Player::TurnStart(Board board) {
 	isTurn = true;
 	canMove = false;
 	board.EnableRoll();
+	board.DisableEndTurn();
+	hasMoved = false;
 
 	if (inRoom) {
 		board.GetExits(room, numExits, Exits);
@@ -223,6 +292,9 @@ Board gameBoard;
 Suggestion prediction;
 ShareInfo reveal;
 NotesScreen notebook;
+
+WarningS WarnPrompt;
+CharacterSelect charSel;
 
 Solution answer;
 
@@ -267,12 +339,12 @@ int main() {
 	if (!SetConsoleMode(inputH, consoleMode))
 		return 103;
 
-	consoleMode = ENABLE_WINDOW_INPUT | ENABLE_MOUSE_INPUT;
+	consoleMode = ENABLE_MOUSE_INPUT;
 	if (!SetConsoleMode(inputH, consoleMode)) {
 		return 103;
 	}
 
-	StartGame();
+	//StartGame();
 
 	while (play) {
 		DWORD unreadInputs;
@@ -308,11 +380,14 @@ int main() {
 			}
 		}
 
+
+
 		Draw(console);
 		Sleep(40);
 	}
 
-	system("Pause");
+
+
 	SetConsoleMode(inputH, consoleModeSave);
 	return 0;
 }
@@ -378,11 +453,18 @@ void Draw(HANDLE out) {
 		break;
 	case NotesS:
 		notebook.Draw(out);
+		break;
+	case Warning:
+		WarnPrompt.Draw(out);
+		GoToXY(0, 0);
+		break;
+	case Char_Sel:
+		charSel.Draw(out);
 		GoToXY(0, 0);
 		break;
 	}
 
-	SetConsoleTextAttribute(console, Palette.Default);
+	SetConsoleTextAttribute(out, Palette.Default);
 }
 
 /***************
@@ -424,7 +506,7 @@ string toString(Rooms input) {
 	case Kitchen:
 		return "Kitchen";
 	case DinningRoom:
-		return "Dinning Room";
+		return "Dining Room";
 	default: return "";
 	}
 }
@@ -530,25 +612,29 @@ void KeyHandler(KEY_EVENT_RECORD e) {
 		case VK_UP:
 			if (state == Play) {
 				curPlayer->move(Up, gameBoard);
+				gameBoard.primeUpdate();
 			}
 			break;
 		case VK_DOWN:
 			if (state == Play) {
 				curPlayer->move(Down, gameBoard);
+				gameBoard.primeUpdate();
 			}
 			break;
 		case VK_LEFT:
 			if (state == Play) {
 				curPlayer->move(Left, gameBoard);
+				gameBoard.primeUpdate();
 			}
 			break;
 		case VK_RIGHT:
 			if (state == Play) {
 				curPlayer->move(Right, gameBoard);
+				gameBoard.primeUpdate();
 			}
 			break;
 		case VK_TAB:
-			if (state == Play) {
+			if (state == Play && gameBoard.CheckEndTurnAvailable()) {
 				NextTurn();
 			}
 			break;
@@ -556,11 +642,17 @@ void KeyHandler(KEY_EVENT_RECORD e) {
 			if (state == Play) {
 				if (curPlayer->IsInRoom()) {
 					curPlayer->ExitRoom(gameBoard);
+					gameBoard.primeUpdate();
 				}
 			}
 			break;
 		case 0x50: // P key
-			PromptPlayer(Ms_Scarlet);
+			LastGuess();
+			break;
+		case 0x52: // R key
+			if (state == Play && gameBoard.CheckRollAvailable()) {
+				RollDie();
+			}
 			break;
 		}
 	}
@@ -590,6 +682,12 @@ void MouseHandler(MOUSE_EVENT_RECORD e) {
 	case NotesS:
 		scrn = &notebook;
 		break;
+	case Warning:
+		scrn = &WarnPrompt;
+		break;
+	case Char_Sel:
+		scrn = &charSel;
+		break;
 	default:
 		scrn = &mainMenu;
 		break;
@@ -612,6 +710,7 @@ void MouseHandler(MOUSE_EVENT_RECORD e) {
 	if (state == Play && curPlayer->IsInRoom()) {
 		if (curPlayer->OverExit(e.dwMousePosition) && e.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED) {
 			curPlayer->ExitRoom(gameBoard);
+			gameBoard.primeUpdate();
 		}
 	}
 }
@@ -627,24 +726,30 @@ void ButtonHandler(ACTION action, int extra) {
 	switch (action) {
 	case PLAY:
 		state = Play;
+		clear();
 		curPlayer->TurnStart(gameBoard);
 		break;
 	case S_PASSAGE:
 		switch (curPlayer->GetRoom()) {
 		case Study:
 			curPlayer->EnterRoom(Kitchen, gameBoard);
+			AddLog("> " + toString(curPlayer->GetChar()) + " used a secret passage!");
 			break;
 		case Lounge:
 			curPlayer->EnterRoom(Conservatory, gameBoard);
+			AddLog("> " + toString(curPlayer->GetChar()) + " used a secret passage!");
 			break;
 		case Conservatory:
 			curPlayer->EnterRoom(Lounge, gameBoard);
+			AddLog("> " + toString(curPlayer->GetChar()) + " used a secret passage!");
 			break;
 		case Kitchen:
 			curPlayer->EnterRoom(Study, gameBoard);
+			AddLog("> " + toString(curPlayer->GetChar()) + " used a secret passage!");
 			break;
 		}
 		gameBoard.DisableSecretPassage();
+		gameBoard.primeUpdate();
 		break;
 
 	case COLORS:
@@ -660,20 +765,20 @@ void ButtonHandler(ACTION action, int extra) {
 	case RULES:
 		state = DEBUG;
 		clear();
+		GoToXY(0, 0);
 		cout << "Instructions for who starts the game are whoever has Miss Scarlet (red) rolls the die and is the first to move. \n" 
 			<< "\n"
 			<< "Movement \n"
 			<< "Players move their suspect token across the squares the amount shown on the die in their roll.You may move your \n"
 			<< "token forwards, backwards or sideways all in one turn using the arrow keys. \n"
-			<< "Moving your token diagonally is against the Clue rules.You cannot move your token to a particular space twice in the \n" 
-			<< "same turn nor occupy or move through the same square as another player. \n"
+			<< "You cannot occupy or move through a space occupied by another player"
 			<< "This rule does not apply to rooms as multiple players and weapons may occupy the same room. \n"
 			<< "\n"
 			<< "Rooms \n"
 			<< "The Clue board game rules state that there are two ways to enter or exit a room : 1) entering through the doorway \n"
 			<< "by moving your token the number shown on the die across the squares, and too one of the doors. You then leave \n"
 			<< "the room by going through any of the doors in that room. 2) Through the secret passage which is an option in some \n"
-			<< "of the rooms and will teleport you to another room. \n"
+			<< "of the rooms (indicated by a '?' in the corner) and will teleport you to another room. \n"
 			<< "\n"
 			<< "Guessing the Killer \n"
 			<< "Once a player enters a room, they are then eligible to make a “suggestion” on who committed the Clue game murder. \n"
@@ -691,7 +796,9 @@ void ButtonHandler(ACTION action, int extra) {
 			<< "cards that he thinks committed the murder.The game will then say if the guess was correct or wrong. \n"
 			<< "Unlike the previously stated rules, a player may make an accusation whether or not their token is in the room they \n"
 			<< "mention.If the 3 cards named are correct \n"
-			<< "that player is the winner.If the accusation is wrong, they lose the game. \n" << endl;
+			<< "that player is the winner.If the accusation is wrong, they lose the game. \n\n" 
+			<< "Press ESC to return to the main menu..." << endl;
+		GoToXY(0, 0);
 		break;
 	case ROLL:
 		roll = RollDie();
@@ -700,6 +807,7 @@ void ButtonHandler(ACTION action, int extra) {
 		movePoints = roll;
 		gameBoard.DisableRoll();
 		gameBoard.DisablePrediction();
+		curPlayer->HasMoved();
 		break;
 	case RESET_MOVE:
 		ResetMove();
@@ -713,6 +821,7 @@ void ButtonHandler(ACTION action, int extra) {
 		prediction.ClearArea();
 		if (extra == 0) {
 			prediction.SetupPrediction(curPlayer->GetRoom());
+			curPlayer->DrawHand(console);
 		}
 		else {
 			prediction.SetupAccusation();
@@ -728,6 +837,7 @@ void ButtonHandler(ACTION action, int extra) {
 			card.Y = extra;
 			reveal.RevealCard(console, card);
 			curPlayer->AddDiscovery(card);
+			gameBoard.primeUpdate();
 			state = Play;
 		}
 		break;
@@ -741,6 +851,7 @@ void ButtonHandler(ACTION action, int extra) {
 			card.Y = extra;
 			reveal.RevealCard(console, card);
 			curPlayer->AddDiscovery(card);
+			gameBoard.primeUpdate();
 			state = Play;
 		}
 		break;
@@ -754,6 +865,7 @@ void ButtonHandler(ACTION action, int extra) {
 			card.Y = extra;
 			reveal.RevealCard(console, card);
 			curPlayer->AddDiscovery(card);
+			gameBoard.primeUpdate();
 			state = Play;
 		}
 		break;
@@ -777,12 +889,61 @@ void ButtonHandler(ACTION action, int extra) {
 		switch (state) {
 		case Warning:
 			prediction.SetupAccusation();
+			prediction.ClearArea();
 			state = Prediction;
 		}
 	case ACCUSE:
-		Accuse();
-		gameBoard.DisablePrediction();
-		gameBoard.DisableResetMv();
+		if (extra != 1) {
+			Accuse();
+			gameBoard.DisablePrediction();
+			gameBoard.DisableResetMv();
+		}
+		else {
+			CheckSolution();
+		}
+		break;
+	case START:
+		charSel.Reset();
+		charSel.SetPlayerNumSel();
+		state = Char_Sel;
+		mainMenu.EnableResume();
+		break;
+	case SELECT:
+		switch (state) {
+		case Char_Sel:
+			switch (charSel.GetState()) {
+			case Num_Players:
+				charSel.SetCharacterSelect(extra);
+				break;
+			case Character_Sel:
+				if (charSel.CharSelected((Character)extra)) {
+					gameBoard.SetBoard(charSel.GetChosenCharacters(), charSel.GetNumPlayers());
+					clear();
+					state = Play;
+					StartGame();
+				}
+			}
+			break;
+		}
+		break;
+	case CREDITS:
+		state = DEBUG;
+		clear();
+		DrawLogo(10, 1);
+		for (int i = 0; i < 6; i++) {
+			GoToXY(50 - (Credits[i].length() / 2), 10 + i);
+			cout << Credits[i];
+		}
+
+		GoToXY(32, 18);
+		cout << "Press ESC to return to the main menu...";
+		break;
+
+	case DISP_CONTROL:
+		DrawControls();
+		break;
+	case EXIT:
+		play = false;
 		break;
 	case NOTES:
 		state = NotesS;
@@ -815,17 +976,16 @@ void clear() {
 
 	//return to 0,0
 	SetConsoleCursorPosition(console, origin);
+	gameBoard.primeUpdate();
 }
 
 void StartGame() {
-	Character pChars[] = { Mr_Green, Ms_Scarlet, Ms_White, Col_Mustard};
-	gameBoard.SetBoard(pChars, 4);
-
 	WeaponDeck.shuffle();
 	CharacterDeck.shuffle();
 	RoomDeck.shuffle();
 
 	answer = Solution(WeaponDeck.draw(), CharacterDeck.draw(), RoomDeck.draw());
+	answer.SetSolution(Candlestick, Col_Mustard, BilliardRoom);
 
 	int numCards = 0;
 	COORD tempDeck[18];
@@ -855,6 +1015,10 @@ void StartGame() {
 
 	InPlayDeck = Deck<COORD, 18>(tempDeck);
 	Player* players = gameBoard.getPlayers();
+	for (int x = 0; x < gameBoard.NumPlayers(); x++) {
+		players[x].ResetHand();
+	}
+
 	int playerId = 0;
 
 	while (InPlayDeck.checkDeck()) {
@@ -866,6 +1030,8 @@ void StartGame() {
 		}
 	}
 
+	curPlayer->TurnStart(gameBoard);
+	gameBoard.primeUpdate();
 }
 
 void NextTurn() {
@@ -879,6 +1045,7 @@ void NextTurn() {
 		gameBoard.EnablePrediction();
 	}
 	PromptPlayer(curPlayer->GetChar());
+	gameBoard.DisableEndTurn();
 }
 
 void ResetMove() {
@@ -892,11 +1059,20 @@ void ResetMove() {
 		COORD XY = curPlayer->GetStartXY();
 		curPlayer->SetInRoom(false);
 		curPlayer->SetXY(XY.X, XY.Y);
-		
 	}
+
+	if (curPlayer->CheckHasMoved()) {
+		movePoints = curPlayer->GetStartMove();
+		curPlayer->CanMove();
+	}
+	else {
+		movePoints = 0;
+		gameBoard.EnableRoll();
+	}
+
 	gameBoard.DisablePrediction();
-	movePoints = curPlayer->GetStartMove();
-	curPlayer->CanMove();
+	gameBoard.DisableEndTurn();
+	gameBoard.primeUpdate();
 }
 
 int RollDie() {
@@ -904,6 +1080,62 @@ int RollDie() {
 	randomNum = rand() % 6 + 1;
 	cout << randomNum << endl;
 	return randomNum;
+}
+
+void DrawPrompt() {
+	clear();
+	gameBoard.primeUpdate();
+	gameBoard.Draw(console);
+
+	string top = { ' ', (char)201, (char)205, (char)205, (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)187, ' ' };
+	string mid = { ' ', (char)186, ' ', ' ', ' ' , ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', (char)186, ' ' };
+	string bot = { ' ', (char)200, (char)205, (char)205, (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)188, ' ' };
+	string buffer = { ' ', ' ', ' ', ' ', ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' };
+
+	GoToXY(30, 4);
+	cout << buffer;
+	for (int i = 0; i < 6; i++) {
+		GoToXY(30, 5 + i);
+		if (i == 0) {
+			cout << top;
+		}
+		else if (i == 5) {
+			cout << bot;
+		}
+		else {
+			cout << mid;
+		}
+	}
+	GoToXY(30, 11);
+	cout << buffer;
+}
+
+void DrawLargePrompt() {
+	clear();
+	gameBoard.primeUpdate();
+	gameBoard.Draw(console);
+
+	string top = { ' ', (char)201, (char)205, (char)205, (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205, (char)205, (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)187, ' ' };
+	string mid = { ' ', (char)186, ' ', ' ', ' ' , ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', (char)186, ' ' };
+	string bot = { ' ', (char)200, (char)205, (char)205, (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)188, ' ' };
+	string buffer = { ' ', ' ', ' ', ' ', ' ', ' ', ' ' , ' ', ' ', ' ', ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ',  ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' };
+
+	GoToXY(25, 3);
+	cout << buffer;
+	for (int i = 0; i < 13; i++) {
+		GoToXY(25, 4 + i);
+		if (i == 0) {
+			cout << top;
+		}
+		else if (i == 12) {
+			cout << bot;
+		}
+		else {
+			cout << mid;
+		}
+	}
+	GoToXY(25, 17);
+	cout << buffer;
 }
 
 void Accuse() {
@@ -916,10 +1148,14 @@ void Accuse() {
 
 		Player * players = gameBoard.getPlayers();
 
+		string logStr = "> " + toString(curPlayer->GetChar()) + " guessed: ";
+		AddLog(logStr);
+		AddLog("  " + toString(cGuess) + " in the " + toString(rGuess) + " with the " + toString(wGuess));
+
 		int numP = gameBoard.NumPlayers();
 
 		for (int p = 0; p < numP; p++) {
-			if (players[p].GetChar() == cGuess) {
+			if (players[p].GetChar() == cGuess && players[p].GetChar() != curPlayer->GetChar()) {
 				players[p].EnterRoom(rGuess, gameBoard);
 				players[p].SetWasMoved(true);
 			}
@@ -958,6 +1194,7 @@ void Accuse() {
 				if (numCards > 0) {
 					cardFound = true;
 					clear();
+					gameBoard.primeUpdate();
 					gameBoard.Draw(console);
 					Show(players[pId].GetChar(), cards, numCards);
 					break;
@@ -966,40 +1203,32 @@ void Accuse() {
 		}
 
 		if (!cardFound) {
+			DrawPrompt();
+
+			GoToXY(36, 6);
+			cout << "No Player could disprove";
+			GoToXY(40, 7);
+			cout << "your suggestion!";
+
+			GoToXY(33, 9);
+			cout << "Press any key to continue...";
+
+			PauseGame();
+
+			string logStr = "  And could not be disproved!";
+			AddLog(logStr);
+
 			state = Play;
 			clear();
+			gameBoard.primeUpdate();
 		}
 
 		gameBoard.DisablePrediction();
+		gameBoard.EnableEndTurn();
 	}
 }
 
-void DrawPrompt() {
-	clear();
-	gameBoard.Draw(console);
 
-	string top = { ' ', (char)201, (char)205, (char)205, (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)187, ' ' };
-	string mid = { ' ', (char)186, ' ', ' ', ' ' , ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', (char)186, ' ' };
-	string bot = { ' ', (char)200, (char)205, (char)205, (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)188, ' ' };
-	string buffer = { ' ', ' ', ' ', ' ', ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' };
-
-	GoToXY(30, 4);
-	cout << buffer;
-	for (int i = 0; i < 6; i++) {
-		GoToXY(30, 5 + i);
-		if (i == 0) {
-			cout << top;
-		}
-		else if (i == 5) {
-			cout << bot;
-		}
-		else {
-			cout << mid;
-		}
-	}
-	GoToXY(30, 11);
-	cout << buffer;
-}
 
 void Show(Character p, COORD cards[], int numC) {
 	PromptPlayer(p);
@@ -1012,9 +1241,54 @@ void Show(Character p, COORD cards[], int numC) {
 	cout << toString(curPlayer->GetChar());
 	SetConsoleTextAttribute(console, Palette.Default);
 
+	string logStr = "  And was disproven by: " + toString(p);
+	AddLog(logStr);
+
 	reveal.LoadButtons(cards, numC);
 	reveal.LoadCharacters(curPlayer->GetChar(), p);
 	state = Share;
+}
+
+void PauseGame() {
+	const int inputR_SIZE = 128;
+	INPUT_RECORD inputR[inputR_SIZE];
+	DWORD iNumRead, unreadInputs;
+
+	GetNumberOfConsoleInputEvents(
+		inputH,
+		&unreadInputs
+	);
+
+	/*
+	if (unreadInputs > 0) {
+		//Clear input buffer
+		ReadConsoleInput(
+			inputH,
+			inputR,
+			inputR_SIZE,
+			&iNumRead
+		);
+	}*/
+
+	while (true) {
+		ReadConsoleInput(
+			inputH,
+			inputR,
+			inputR_SIZE,
+			&iNumRead
+		);
+
+		if (iNumRead > 0) {
+			bool keyHit = false;
+			for (DWORD c = 0; c < iNumRead; c++) {
+				if ((inputR[c].EventType == KEY_EVENT && inputR[c].Event.KeyEvent.bKeyDown == (BOOL) true && inputR[c].Event.KeyEvent.wRepeatCount < 2 ) || (inputR[c].EventType == MOUSE_EVENT && inputR[c].Event.MouseEvent.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED)) {
+					keyHit = true;
+				}
+			}
+			if (keyHit)
+				break;
+		}
+	}
 }
 
 /***************************
@@ -1034,49 +1308,191 @@ void PromptPlayer(Character c) {
 	GoToXY(33, 9);
 	cout << "Press any key to continue...";
 
-	const int inputR_SIZE = 128;
-	INPUT_RECORD inputR[inputR_SIZE];
-	DWORD iNumRead;
-
-	//Clear input buffer
-	ReadConsoleInput(
-		inputH,
-		inputR,
-		inputR_SIZE,
-		&iNumRead
-	);
-
-	while (true) {
-		ReadConsoleInput(
-			inputH,
-			inputR,
-			inputR_SIZE,
-			&iNumRead
-		);
-
-		if (iNumRead > 0) {
-			bool keyHit = false;
-			for (DWORD c = 0; c < iNumRead; c++) {
-				if (inputR[c].EventType == KEY_EVENT || (inputR[c].EventType == MOUSE_EVENT && inputR[c].Event.MouseEvent.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED)) {
-					keyHit = true;
-				}
-			}
-			if(keyHit)
-				break;
-		}
-	}
+	PauseGame();
 
 	clear();
+	gameBoard.primeUpdate();
 }
 
 void LastGuess() {
 	DrawPrompt();
+	string buff = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' };
 
 	GoToXY(33, 6);
+	SetConsoleTextAttribute(console, 12*16);
+	cout << "  ####   !! WARNING !!   ####  ";
+	GoToXY(33, 7);
 	SetConsoleTextAttribute(console, 12);
-	cout << "WARNING! Entering the BASEMENT will trigger your FINAL ACCUSATION. There's NO GOING BACK.";
-
+	cout << "  Entering the BASEMENT will";
+	GoToXY(33, 8);
+	cout << "trigger your FINAL ACCUSATION.";
+	GoToXY(33, 9);
+	cout << "    There's NO GOING BACK.";
+	GoToXY(30, 12);
+	cout << buff;
 	state = Warning;
 }
 
- 
+void CheckSolution() {
+	Weapon wGuess;
+	Character cGuess;
+	Rooms rGuess;
+
+	prediction.GetGuess(wGuess, cGuess, rGuess);
+
+	string logStr = "> " + toString(curPlayer->GetChar()) + " accused: ";
+	AddLog(logStr);
+	AddLog("  " + toString(cGuess) + " in the " + toString(rGuess) + " with the " + toString(wGuess));
+
+	if (answer.guess(wGuess, cGuess, rGuess)) {
+		Victory();
+	}
+	else {
+		gameBoard.KillPlayer();
+
+		if (gameBoard.CheckGameOver()) {
+			GameOver();
+		}
+		else {
+			DrawLargePrompt();
+			string charStr = toString(curPlayer->GetChar());
+			SetConsoleTextAttribute(console, GetColor(curPlayer->GetChar()));
+			GoToXY(48 - (charStr.length() / 2), 5);
+			cout << charStr;
+			SetConsoleTextAttribute(console, 12);
+			DrawLose(28, 6);
+
+
+			SetConsoleTextAttribute(console, Palette.Default);
+			GoToXY(28, 13);
+			cout << "They are gone... But they can still help!";
+
+			GoToXY(34, 14);
+			cout << "Press any key to continue...";
+
+			PauseGame();
+
+			string logStr = "  And perished because of it...";
+			AddLog(logStr);
+
+			state = Play;
+			NextTurn();
+		}
+	}
+}
+
+void Victory() {
+
+	clear();
+	gameBoard.primeUpdate();
+	gameBoard.Draw(console);
+
+	string top = { ' ', (char)201, (char)205, (char)205, (char)205, (char)205, (char)205, (char)205, (char)205, (char)205, (char)205, (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205, (char)205, (char)205, (char)205, (char)205, (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205, (char)205, (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)187, ' ' };
+	string mid = { ' ', (char)186, ' ', ' ', ' ' , ' ', ' ' , ' ', ' ', ' ' , ' ', ' ' , ' ', ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ', ' ' , ' ', ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ' , ' ', ' ', ' ' , ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', (char)186, ' ' };
+	string bot = { ' ', (char)200, (char)205, (char)205, (char)205, (char)205, (char)205, (char)205, (char)205, (char)205, (char)205, (char)205, (char)205, (char)205, (char)205, (char)205, (char)205, (char)205, (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)188, ' ' };
+	string buffer = { ' ', ' ', ' ', ' ', ' ', ' ', ' ' , ' ', ' ', ' ', ' ' , ' ', ' ' , ' ', ' ' , ' ', ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ',  ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ' , ' ', ' ', ' ' , ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' };
+
+	GoToXY(19, 3);
+	cout << buffer;
+	for (int i = 0; i < 14; i++) {
+		GoToXY(19, 4 + i);
+		if (i == 0) {
+			cout << top;
+		}
+		else if (i == 13) {
+			cout << bot;
+		}
+		else {
+			cout << mid;
+		}
+	}
+	GoToXY(20, 18);
+	cout << buffer;
+
+	string charStr = toString(curPlayer->GetChar());
+	SetConsoleTextAttribute(console, GetColor(curPlayer->GetChar()));
+	GoToXY(48 - (charStr.length() / 2), 5);
+	cout << charStr;
+	SetConsoleTextAttribute(console, 10);
+	DrawWin(28, 6);
+
+
+	SetConsoleTextAttribute(console, Palette.Default);
+	GoToXY(38, 13);
+	cout << "The Correct Solution was:";
+
+	string ansStr = toString(answer.GetChar());
+	ansStr.append(" in the ");
+	ansStr.append(toString(answer.GetRoom()));
+	ansStr.append(", with the ");
+	ansStr.append(toString(answer.GetWeap()));
+
+	GoToXY(49 - (ansStr.length() / 2), 14);
+	SetConsoleTextAttribute(console, GetColor(answer.GetChar()));
+	cout << toString(answer.GetChar());
+	SetConsoleTextAttribute(console, Palette.Default);
+	cout << " in the " << toString(answer.GetRoom()) << ", with the " << toString(answer.GetWeap());
+
+	GoToXY(32, 16);
+	cout << "Press any key to return to the main menu...";
+
+	PauseGame();
+
+	clear();
+	state = Menu;
+	mainMenu.DisableResume();
+}
+
+void GameOver() {
+	clear();
+
+	DrawGameOver(10, 2);
+
+
+	GoToXY(40, 13);
+	cout << "The Correct Solution was:";
+	GoToXY(30, 14);
+	SetConsoleTextAttribute(console, GetColor(answer.GetChar()));
+	cout << toString(answer.GetChar());
+	SetConsoleTextAttribute(console, Palette.Default);
+	cout << " in the " << toString(answer.GetRoom()) << ", with the " << toString(answer.GetWeap());
+
+	GoToXY(28, 16);
+	cout << "Press any key to return to the main menu...";
+
+	PauseGame();
+
+	clear();
+	state = Menu;
+	mainMenu.DisableResume();
+}
+
+void DrawControls() {
+	DrawLargePrompt();
+
+	GoToXY(28, 5);
+	cout << "Move with the arrow keys";
+
+	GoToXY(28, 6);
+	cout << "To exit a Room:";
+	GoToXY(28, 7);
+	cout << "-Use left and right to select an exit.";
+	GoToXY(28, 8);
+	cout <<	"-Press SPACE to exit room.";
+	GoToXY(28, 9);
+	cout << "-OR click an exit to exit room.";
+	GoToXY(28, 10);
+	cout << "Action Controls:";
+	GoToXY(28, 11);
+	cout << "  TAB: End Turn";
+	GoToXY(28, 12);
+	cout << "  R: Roll Dice";
+
+	GoToXY(34, 15);
+	cout << "Press any key to continue...";
+
+	PauseGame();
+
+	clear();
+	gameBoard.primeUpdate();
+}

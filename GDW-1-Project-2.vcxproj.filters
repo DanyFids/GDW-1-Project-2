@@ -47,5 +47,14 @@
     <ClInclude Include="WinLoss.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="Suggestion.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CharacterSelect.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Log.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

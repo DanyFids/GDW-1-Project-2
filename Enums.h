@@ -59,7 +59,8 @@ enum GameState {
 	Pause,
 	Share,
 	Warning,
-	NotesS
+	NotesS,
+	Char_Sel
 };
 
 enum ACTION {
@@ -79,7 +80,11 @@ enum ACTION {
 	P_ROOMS,
 	START,
 	ACCEPT,
-
+	CREDITS,
+	SELECT,
+	EXIT,
+	
+	
 	COLORS,
 	CHARACTERS,
 	RULES

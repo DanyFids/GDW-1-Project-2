@@ -119,12 +119,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Board.h" />
+    <ClInclude Include="CharacterSelect.h" />
     <ClInclude Include="Deck.h" />
     <ClInclude Include="Enums.h" />
     <ClInclude Include="FunctionProto.h" />
+    <ClInclude Include="Log.h" />
     <ClInclude Include="Logo.h" />
     <ClInclude Include="Notes.h" />
     <ClInclude Include="Player.h" />
+    <ClInclude Include="Suggestion.h" />
     <ClInclude Include="UI.h" />
     <ClInclude Include="WinLoss.h" />
   </ItemGroup>
