@@ -58,6 +58,8 @@ private:
 	const int BOARD_WIDTH = 54;
 	const int BOARD_HEIGHT = 26;
 	const int MARGIN = 1;
+	bool drawBoard = true;
+
 	int x, y;
 	int numPlayers;
 	int curPlayerId;
@@ -93,6 +95,7 @@ private:
 	Button* sPassageBtn = &buttons[1];
 	Button* predictBtn = &buttons[5];
 	Button* ResetMvBtn = &buttons[4];
+	Button* EndTurnBtn = &buttons[6];
 
 	static const int UILines = 11;
 	string UILayout[UILines] = {
@@ -121,7 +124,6 @@ public:
 		sPassageBtn->Disable();
 		predictBtn->Disable();
 		buttons[0].Disable();
-		buttons[2].Disable();
 
 		//The Following Code Builds the board.
 		//Special CHaracters
@@ -518,12 +520,17 @@ public:
 	}
 
 	void Draw(HANDLE out) {
-		GoToXY(x, y);
-		SetConsoleTextAttribute(out, Palette.Board);
-		cout << boardLayout;
+		if (drawBoard) {
+			GoToXY(x, y);
+			SetConsoleTextAttribute(out, Palette.Board);
+			cout << boardLayout;
+			drawBoard = false;
+
+			DrawLog(out);
+		}
 
 		for (int c = 0; c < numPlayers; c++) {
-			if( c != curPlayerId)
+			if (c != curPlayerId)
 				players[c].Draw(out, (x + (MARGIN * 2)), (y + MARGIN));
 		}
 		players[curPlayerId].Draw(out, (x + (MARGIN * 2)), (y + MARGIN));
@@ -549,6 +556,8 @@ public:
 		for (int b = 0; b < NUM_BUTTONS; b++) {
 			buttons[b].draw(out);
 		}
+
+
 	}
 
 	Player* NextPlayer() {
@@ -677,6 +686,7 @@ public:
 
 	void SetBoard(Character p[], int numP) {
 		numPlayers = numP;
+		numDead = 0;
 
 		for (int i = 0; i < numP; i++) {
 			for (int j = i; j < numP; j++) {
@@ -741,6 +751,63 @@ public:
 		}
 		else {
 			return false;
+		}
+	}
+
+	void primeUpdate() {
+		drawBoard = true;
+	}
+
+	void DisableEndTurn() {
+		EndTurnBtn->Disable();
+	}
+
+	void EnableEndTurn() {
+		EndTurnBtn->Enable();
+	}
+
+	bool CheckEndTurnAvailable() {
+		if (EndTurnBtn->IsDisabled()) {
+			return false;
+		}
+		else {
+			return true;
+		}
+	}
+
+	bool CheckRollAvailable() {
+		if (rollBtn->IsDisabled()) {
+			return false;
+		}
+		else {
+			return true;
+		}
+	}
+
+	bool CheckSecretPassageAvailable() {
+		if (sPassageBtn->IsDisabled()) {
+			return false;
+		}
+		else {
+			return true;
+		}
+	}
+
+	bool CheckPredictAvailable() {
+		if (predictBtn->IsDisabled()) {
+			return false;
+		}
+		else {
+			return true;
+		}
+	}
+
+	bool CheckResetMvAvailable() {
+		if (ResetMvBtn->IsDisabled()) {
+			return false;
+		}
+		else {
+			return true;
 		}
 	}
 };

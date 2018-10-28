@@ -33,6 +33,7 @@ private:
 	int selectExit = -1;
 
 	bool wasMoved = false;
+	bool hasMoved = false;
 
 	Notes notes;
 
@@ -112,22 +113,46 @@ public:
 			if (blinkTimer >= BLINK_TIME * 2) {
 				blinkTimer = 0;
 			}
+		}
+	}
 
+	void DrawHand(HANDLE out) {
+		SetConsoleTextAttribute(out, Palette.Default);
+		
+		string top = { ' ', (char)201, 'H', 'a', 'n', 'd', (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)187, ' ' };
+		string mid = { ' ', (char)186, ' ', ' ' , ' ', ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', (char)186, ' ' };
+		string bot = { ' ', (char)200, (char)205, (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)188, ' ' };
+		string buffer = { ' ', ' ', ' ', ' ' , ' ', ' ',  ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' };
 
-			SetConsoleTextAttribute(out, Palette.Default);
-			for (int h = 0; h < handSize; h++) {
-				GoToXY(80, 0 + h);
-				switch (hand[h].X) {
-				case 0:
-					cout << "[Weapon] " << toString((Weapon)hand[h].Y);
-					break;
-				case 1:
-					cout << "[Character] " << toString((Character)hand[h].Y);
-					break;
-				case 2:
-					cout << "[Room] " << toString((Rooms)hand[h].Y);
-					break;
-				}
+		GoToXY(78, 3);
+		cout << buffer;
+		for (int i = 0; i < 11; i++) {
+			GoToXY(78, 4 + i);
+			if (i == 0) {
+				cout << top;
+			}
+			else if (i == 10) {
+				cout << bot;
+			}
+			else {
+				cout << mid;
+			}
+		}
+		GoToXY(78, 15);
+		cout << buffer;
+
+		for (int h = 0; h < handSize; h++) {
+			GoToXY(80, 5 + h);
+			switch (hand[h].X) {
+			case 0:
+				cout << "[Weapon] " << toString((Weapon)hand[h].Y);
+				break;
+			case 1:
+				cout << "[Character] " << toString((Character)hand[h].Y);
+				break;
+			case 2:
+				cout << "[Room] " << toString((Rooms)hand[h].Y);
+				break;
 			}
 		}
 	}
@@ -269,5 +294,17 @@ public:
 
 	void SetWasMoved(bool b) {
 		wasMoved = b;
+	}
+
+	void ResetHand() {
+		handSize = 0;
+	}
+
+	void HasMoved() {
+		hasMoved = true;
+	}
+
+	bool CheckHasMoved() {
+		return hasMoved;
 	}
 };

@@ -61,6 +61,10 @@ public:
 		return extra;
 	}
 
+	void SetExtra(int i) {
+		extra = i;
+	}
+
 	void draw(HANDLE out) {
 		GoToXY(x, y);
 		if (disabled) {
@@ -79,6 +83,29 @@ public:
 			cout << "|" << text << "|";
 		}
 		GoToXY(0, 0);
+	}
+
+	void DrawColor(HANDLE out, int color) {
+		GoToXY(x, y);
+		if (disabled) {
+			SetConsoleTextAttribute(out, Palette.Board);
+			cout << "|" << text << "|";
+			SetConsoleTextAttribute(out, Palette.Default);
+		}
+		else if (isOver(mouseLoc)) {
+			cout << "|";
+			SetConsoleTextAttribute(out, Palette.Button + color);
+			cout << text;
+			SetConsoleTextAttribute(out, Palette.Default);
+			cout << "|";
+		}
+		else {
+			cout << "|";
+			SetConsoleTextAttribute(out, color);
+			cout << text;
+			SetConsoleTextAttribute(out, Palette.Default);
+			cout << "|";
+		}
 	}
 
 	void Disable() {
@@ -114,4 +141,3 @@ public:
 		numButtons = i;
 	}
 };
-

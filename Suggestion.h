@@ -60,6 +60,9 @@ private:
 		Button("Cancel", 55, 19, CANCEL)
 	};
 
+	Button * accuseBtn = &buttons[21];
+	Button * CancelBtn = &buttons[22];
+
 public:	
 	Suggestion() {
 		SetNumButtons(NUM_BUTTONS);
@@ -118,6 +121,9 @@ public:
 		for (int c = 12; c < 21; c++) {
 			buttons[c].Disable();
 		}
+
+		accuseBtn->SetExtra(0);
+		CancelBtn->Enable();
 	}
 
 	void SetupAccusation() {
@@ -128,6 +134,9 @@ public:
 		for (int c = 12; c < 21; c++) {
 			buttons[c].Enable();
 		}
+
+		accuseBtn->SetExtra(1);
+		CancelBtn->Disable();
 	}
 
 	void ClearArea() {
@@ -261,52 +270,21 @@ public:
 		GoToXY(33, 9);
 		cout << "Press any key to continue...";
 
-		const int inputR_SIZE = 128;
-		INPUT_RECORD inputR[inputR_SIZE];
-		DWORD iNumRead;
-		HANDLE inputH = GetStdHandle(STD_INPUT_HANDLE);
-
-		//Clear input buffer
-		ReadConsoleInput(
-			inputH,
-			inputR,
-			inputR_SIZE,
-			&iNumRead
-		);
-
-		while (true) {
-			ReadConsoleInput(
-				inputH,
-				inputR,
-				inputR_SIZE,
-				&iNumRead
-			);
-
-			if (iNumRead > 0) {
-				bool keyHit = false;
-				for (DWORD c = 0; c < iNumRead; c++) {
-					if (inputR[c].EventType == KEY_EVENT || (inputR[c].EventType == MOUSE_EVENT && inputR[c].Event.MouseEvent.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED)) {
-						keyHit = true;
-					}
-				}
-				if (keyHit)
-					break;
-			}
-		}
+		PauseGame();
 
 		clear();
 	}
 };
 
-class Warning :public Screen {
+class WarningS :public Screen {
 private:
 	static const int NUM_BUTTONS = 2;
 	Button buttons[NUM_BUTTONS] = {
-		Button("Accept", 33,9, ACCEPT),
-		Button("Cancel", 42,9, CANCEL)
+		Button("Accept", 40,11, ACCEPT),
+		Button("Cancel", 50,11, CANCEL)
 	};
-private:
-	Warning() {
+public:
+	WarningS() {
 		SetNumButtons(NUM_BUTTONS);
 	}
 
@@ -314,5 +292,9 @@ private:
 		for (int b = 0; b < NUM_BUTTONS; b++) {
 			buttons[b].draw(out);
 		}
+	}
+
+	Button* GetButtons() {
+		return buttons;
 	}
 };

@@ -58,7 +58,8 @@ enum GameState {
 	Prediction,
 	Pause,
 	Share,
-	Warning
+	Warning,
+	Char_Sel
 };
 
 enum ACTION {
@@ -78,7 +79,11 @@ enum ACTION {
 	P_ROOMS,
 	START,
 	ACCEPT,
-
+	CREDITS,
+	SELECT,
+	EXIT,
+	
+	
 	COLORS,
 	CHARACTERS,
 	RULES
