@@ -501,7 +501,7 @@ string toString(Rooms input) {
 	case Kitchen:
 		return "Kitchen";
 	case DinningRoom:
-		return "Dinning Room";
+		return "Dining Room";
 	default: return "";
 	}
 }
