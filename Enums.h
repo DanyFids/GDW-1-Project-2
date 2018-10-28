@@ -58,7 +58,8 @@ enum GameState {
 	Prediction,
 	Pause,
 	Share,
-	Warning
+	Warning,
+	NotesS
 };
 
 enum ACTION {

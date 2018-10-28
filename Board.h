@@ -120,7 +120,7 @@ public:
 
 		sPassageBtn->Disable();
 		predictBtn->Disable();
-		buttons[0].Disable();
+		//buttons[0].Disable();
 		buttons[2].Disable();
 
 		//The Following Code Builds the board.

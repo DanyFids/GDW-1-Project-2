@@ -10,9 +10,15 @@ struct Notes {
 	Weapon w[6];
 	Character c[6];
 	Rooms r[9];
+	Weapon sus_w[6];
+	Character sus_c[6];
+	Rooms sus_r[9];
 	int w_num = 0;
 	int c_num = 0;
 	int r_num = 0;
+	int sus_w_num = 0;
+	int sus_c_num = 0;
+	int sus_r_num = 0;
 };
 
 class Player {

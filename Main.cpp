@@ -12,6 +12,7 @@
 #include"Board.h"
 #include"Deck.h"
 #include"Suggestion.h"
+#include"Notes.h"
 
 using namespace std;
 
@@ -221,6 +222,7 @@ MainMenu mainMenu;
 Board gameBoard;
 Suggestion prediction;
 ShareInfo reveal;
+NotesScreen notebook;
 
 Solution answer;
 
@@ -372,6 +374,10 @@ void Draw(HANDLE out) {
 		break;
 	case Share:
 		reveal.Draw(out);
+		GoToXY(0, 0);
+		break;
+	case NotesS:
+		notebook.Draw(out);
 		GoToXY(0, 0);
 		break;
 	}
@@ -581,6 +587,9 @@ void MouseHandler(MOUSE_EVENT_RECORD e) {
 	case Share:
 		scrn = &reveal;
 		break;
+	case NotesS:
+		scrn = &notebook;
+		break;
 	default:
 		scrn = &mainMenu;
 		break;
@@ -759,6 +768,9 @@ void ButtonHandler(ACTION action, int extra) {
 			clear();
 			ResetMove();
 			break;
+		case NotesS:
+			state = Play;
+			clear();
 		}
 		break;
 	case ACCEPT:
@@ -771,6 +783,9 @@ void ButtonHandler(ACTION action, int extra) {
 		Accuse();
 		gameBoard.DisablePrediction();
 		gameBoard.DisableResetMv();
+		break;
+	case NOTES:
+		state = NotesS;
 		break;
 	}
 }
@@ -1063,3 +1078,5 @@ void LastGuess() {
 
 	state = Warning;
 }
+
+ 
