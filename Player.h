@@ -71,6 +71,7 @@ public:
 		pChar = p.GetChar();
 		token = GetToken(pChar);
 		color = GetColor(pChar);
+		notes = *p.GetNotes();
 		return p;
 	}
 
@@ -122,7 +123,7 @@ public:
 		}
 	}
 
-	void DrawHand(HANDLE out) {
+	void DrawHand(HANDLE out, int x, int y, bool buf = true) {
 		SetConsoleTextAttribute(out, Palette.Default);
 		
 		string top = { ' ', (char)201, 'H', 'a', 'n', 'd', (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)187, ' ' };
@@ -130,10 +131,12 @@ public:
 		string bot = { ' ', (char)200, (char)205, (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)205, (char)205 , (char)205, (char)188, ' ' };
 		string buffer = { ' ', ' ', ' ', ' ' , ' ', ' ',  ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' , ' ', ' ', ' ' };
 
-		GoToXY(78, 3);
-		cout << buffer;
+		if (buf) {
+			GoToXY(x, y);
+			cout << buffer;
+		}
 		for (int i = 0; i < 11; i++) {
-			GoToXY(78, 4 + i);
+			GoToXY(x, (y+1) + i);
 			if (i == 0) {
 				cout << top;
 			}
@@ -144,11 +147,13 @@ public:
 				cout << mid;
 			}
 		}
-		GoToXY(78, 15);
-		cout << buffer;
+		if (buf) {
+			GoToXY(x, y + 12);
+			cout << buffer;
+		}
 
 		for (int h = 0; h < handSize; h++) {
-			GoToXY(80, 5 + h);
+			GoToXY(x+2, (y+2) + h);
 			switch (hand[h].X) {
 			case 0:
 				cout << "[Weapon] " << toString((Weapon)hand[h].Y);
@@ -286,8 +291,8 @@ public:
 		inRoom = r;
 	}
 
-	Notes GetNotes() {
-		return notes;
+	Notes* GetNotes() {
+		return &notes;
 	}
 
 	bool CheckWasMoved() {
@@ -304,6 +309,7 @@ public:
 
 	void ResetHand() {
 		handSize = 0;
+		inRoom = false;
 	}
 
 	void HasMoved() {
@@ -312,5 +318,63 @@ public:
 
 	bool CheckHasMoved() {
 		return hasMoved;
+	}
+
+	void AddSuspicion(COORD card) {
+		bool found = false;
+		switch (card.X) {
+		case 0:
+			found = false;
+			for (int x = 0; x < notes.sus_w_num; x++) {
+				if (notes.sus_w[x] == (Weapon) card.Y) {
+					found = true;
+					for (int y = x; y < notes.sus_w_num - 1; y++) {
+						notes.sus_w[y] = notes.sus_w[y + 1];
+					}
+					notes.sus_w_num--;
+					break;
+				}
+			}
+			if (!found) {
+				notes.sus_w[notes.sus_w_num] = (Weapon)card.Y;
+				notes.sus_w_num++;
+			}
+			break;
+		case 1:
+			found = false;
+			for (int x = 0; x < notes.sus_c_num; x++) {
+				if (notes.sus_c[x] == (Character)card.Y) {
+					found = true;
+					for (int y = x; y < notes.sus_c_num - 1; y++) {
+						notes.sus_c[y] = notes.sus_c[y + 1];
+					}
+					notes.sus_c_num--;
+					break;
+				}
+			}
+			if (!found) {
+				notes.sus_c[notes.sus_c_num] = (Character)card.Y;
+				notes.sus_c_num++;
+			}
+			break;
+		case 2:
+			found = false;
+			for (int x = 0; x < notes.sus_r_num; x++) {
+				if (notes.sus_r[x] == (Rooms)card.Y) {
+					found = true;
+					for (int y = x; y < notes.sus_r_num - 1; y++) {
+						notes.sus_r[y] = notes.sus_r[y + 1];
+					}
+					notes.sus_r_num--;
+					break;
+				}
+			}
+			if (!found) {
+				notes.sus_r[notes.sus_r_num] = (Rooms)card.Y;
+				notes.sus_r_num++;
+			}
+			break;
+		}
+		
 	}
 };

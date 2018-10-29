@@ -686,6 +686,7 @@ public:
 	void SetBoard(Character p[], int numP) {
 		numPlayers = numP;
 		numDead = 0;
+		curPlayerId = 0;
 
 		for (int i = 0; i < numP; i++) {
 			for (int j = i; j < numP; j++) {
@@ -703,6 +704,7 @@ public:
 			COORD start = GetStartLoc(p[c]);
 			Player temp = Player(p[c], start.X, start.Y);
 			players[c] = temp;
+			players[c].ResetHand();
 		}
 		
 	}

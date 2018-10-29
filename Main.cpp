@@ -237,7 +237,7 @@ void Player::ExitRoom(Board b) {
 		room = Null;
 		movePoints--;
 		if (movePoints == 0) {
-			board.EnableEndTurn();
+			b.EnableEndTurn();
 		}
 		b.DisableSecretPassage();
 		b.DisablePrediction();
@@ -646,8 +646,14 @@ void KeyHandler(KEY_EVENT_RECORD e) {
 				}
 			}
 			break;
-		case 0x50: // P key
-			LastGuess();
+		case 0x50: // P key -- USED FOR DEBUGING
+			GoToXY(80, 2);
+			cout << toString(answer.GetWeap());
+			GoToXY(80, 3);
+			cout << toString(answer.GetChar());
+			GoToXY(80, 4);
+			cout << toString(answer.GetRoom());
+
 			break;
 		case 0x52: // R key
 			if (state == Play && gameBoard.CheckRollAvailable()) {
@@ -821,17 +827,18 @@ void ButtonHandler(ACTION action, int extra) {
 		prediction.ClearArea();
 		if (extra == 0) {
 			prediction.SetupPrediction(curPlayer->GetRoom());
-			curPlayer->DrawHand(console);
+			curPlayer->DrawHand(console, 78, 3);
 		}
 		else {
 			prediction.SetupAccusation();
 		}
 		break;
 	case P_WEAPON:
-		if (state == Prediction) {
+		switch(state){
+		case Prediction:
 			prediction.Select((Weapon)extra);
-		}
-		else if (state == Share) {
+			break;
+		case Share: 
 			COORD card;
 			card.X = 0;
 			card.Y = extra;
@@ -839,13 +846,21 @@ void ButtonHandler(ACTION action, int extra) {
 			curPlayer->AddDiscovery(card);
 			gameBoard.primeUpdate();
 			state = Play;
+			break;
+		case NotesS:
+			COORD susCard;
+			susCard.X = 0;
+			susCard.Y = extra;
+			curPlayer->AddSuspicion(susCard);
+			break;
 		}
 		break;
 	case P_CHARACTER:
-		if (state == Prediction) {
+		switch (state) {
+		case Prediction:
 			prediction.Select((Character)extra);
-		}
-		else if (state == Share) {
+			break;
+		case Share:
 			COORD card;
 			card.X = 1;
 			card.Y = extra;
@@ -853,13 +868,21 @@ void ButtonHandler(ACTION action, int extra) {
 			curPlayer->AddDiscovery(card);
 			gameBoard.primeUpdate();
 			state = Play;
+			break;
+		case NotesS:
+			COORD susCard;
+			susCard.X = 1;
+			susCard.Y = extra;
+			curPlayer->AddSuspicion(susCard);
+			break;
 		}
 		break;
 	case P_ROOMS:
-		if (state == Prediction) {
+		switch (state) {
+		case Prediction:
 			prediction.Select((Rooms)extra);
-		}
-		else if(state == Share){
+			break;
+		case Share:
 			COORD card;
 			card.X = 2;
 			card.Y = extra;
@@ -867,6 +890,13 @@ void ButtonHandler(ACTION action, int extra) {
 			curPlayer->AddDiscovery(card);
 			gameBoard.primeUpdate();
 			state = Play;
+			break;
+		case NotesS:
+			COORD susCard;
+			susCard.X = 2;
+			susCard.Y = extra;
+			curPlayer->AddSuspicion(susCard);
+			break;
 		}
 		break;
 	case CANCEL:
@@ -883,6 +913,7 @@ void ButtonHandler(ACTION action, int extra) {
 		case NotesS:
 			state = Play;
 			clear();
+			break;
 		}
 		break;
 	case ACCEPT:
@@ -947,6 +978,8 @@ void ButtonHandler(ACTION action, int extra) {
 		break;
 	case NOTES:
 		state = NotesS;
+		notebook.LoadNotes(curPlayer->GetNotes());
+		curPlayer->DrawHand(console, 18, 12, false);
 		break;
 	}
 }
@@ -985,7 +1018,6 @@ void StartGame() {
 	RoomDeck.shuffle();
 
 	answer = Solution(WeaponDeck.draw(), CharacterDeck.draw(), RoomDeck.draw());
-	answer.SetSolution(Candlestick, Col_Mustard, BilliardRoom);
 
 	int numCards = 0;
 	COORD tempDeck[18];

@@ -2,7 +2,7 @@
 
 class Suggestion : public Screen {
 private:
-	Notes notes;
+	Notes* notes;
 	Weapon wGuess;
 	Character cGuess;
 	Rooms rGuess;
@@ -68,7 +68,7 @@ public:
 		SetNumButtons(NUM_BUTTONS);
 	}
 
-	void LoadNotes(Notes n) {
+	void LoadNotes(Notes* n) {
 		notes = n;
 	}
 
