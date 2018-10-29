@@ -107,7 +107,56 @@ public:
 
 
 		for (int b = 0; b < GetNumButtons(); b++) {
-			buttons[b].draw(out);
+			bool found = false;
+			bool sus = false;
+			
+			if (b < 6) {
+				for (int w = 0; w < notes->w_num; w++) {
+					if (notes->w[w] == (Weapon)b) {
+						found = true;
+					}
+				}
+				for (int w = 0; w < notes->sus_w_num; w++) {
+					if (notes->sus_w[w] == (Weapon)b) {
+						sus = true;
+					}
+				}
+			}
+			else if (b > 5 && b < 12) {
+				for (int c = 0; c < notes->c_num; c++) {
+					if (notes->c[c] == (Character)(b-6)) {
+						found = true;
+					}
+				}
+				for (int c = 0; c < notes->sus_c_num; c++) {
+					if (notes->sus_c[c] == (Weapon)(b-6)) {
+						sus = true;
+					}
+				}
+			}
+			else if (b > 11 && b < 21) {
+				for (int r = 0; r < notes->r_num; r++) {
+					if (notes->r[r] == (Weapon)(b-10)) {
+						found = true;
+					}
+				}
+				for (int r = 0; r < notes->sus_r_num; r++) {
+					if (notes->sus_r[r] == (Weapon)(b-10)) {
+						sus = true;
+					}
+				}
+			}
+
+
+			if (found) {
+				buttons[b].DrawColor(out, Palette.Board);
+			}
+			else if (sus) {
+				buttons[b].DrawColor(out, 14);
+			}
+			else {
+				buttons[b].draw(out);
+			}
 		}
 	}
 
