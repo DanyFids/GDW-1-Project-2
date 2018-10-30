@@ -655,11 +655,11 @@ void KeyHandler(KEY_EVENT_RECORD e) {
 			cout << toString(answer.GetRoom());
 
 			break;
-		case 0x52: // R key
+		/*case 0x52: // R key
 			if (state == Play && gameBoard.CheckRollAvailable()) {
 				RollDie();
 			}
-			break;
+			break;*/
 		}
 	}
 }
@@ -1062,8 +1062,12 @@ void StartGame() {
 		}
 	}
 
+	curPlayer->TurnEnd();
+	curPlayer = gameBoard.GetCurrentPlayer();
 	curPlayer->TurnStart(gameBoard);
 	gameBoard.primeUpdate();
+
+	ResetLog();
 }
 
 void NextTurn() {
@@ -1110,7 +1114,7 @@ void ResetMove() {
 int RollDie() {
 	int randomNum;
 	randomNum = rand() % 6 + 1;
-	cout << randomNum << endl;
+	//cout << randomNum << endl;
 	return randomNum;
 }
 
@@ -1518,7 +1522,7 @@ void DrawControls() {
 	GoToXY(28, 11);
 	cout << "  TAB: End Turn";
 	GoToXY(28, 12);
-	cout << "  R: Roll Dice";
+	cout << "  ESC: Return to main menu";
 
 	GoToXY(34, 15);
 	cout << "Press any key to continue...";

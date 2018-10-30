@@ -44,3 +44,7 @@ void DrawLog(HANDLE out) {
 		cout << gLog[l];
 	}
 }
+
+void ResetLog() {
+	numLogs = 0;
+}
