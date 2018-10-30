@@ -32,3 +32,4 @@ void Victory();
 void GameOver();
 void PauseGame();
 void DrawControls();
+void sugLoadNotes();

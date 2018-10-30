@@ -221,6 +221,7 @@ void Player::EnterRoom(Rooms r, Board b) {
 	if (r != Basement) {
 		b.EnablePrediction();
 		b.EnableEndTurn();
+		sugLoadNotes();
 	}
 	else {
 		LastGuess();
@@ -923,6 +924,7 @@ void ButtonHandler(ACTION action, int extra) {
 			prediction.ClearArea();
 			state = Prediction;
 		}
+		break;
 	case ACCUSE:
 		if (extra != 1) {
 			Accuse();
@@ -1531,4 +1533,8 @@ void DrawControls() {
 
 	clear();
 	gameBoard.primeUpdate();
+}
+
+void sugLoadNotes() {
+	prediction.LoadNotes(curPlayer->GetNotes());
 }
