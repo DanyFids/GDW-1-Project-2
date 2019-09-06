@@ -1,0 +1,6 @@
+﻿  Main.cpp
+c:\users\100716573\documents\visual studio 2017\projects\gdw-1-project-2\gdw-1-project-2\ui.h(48): warning C4018: '<': signed/unsigned mismatch
+  Generating code
+  All 391 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finished generating code
+  GDW-1-Project-2.vcxproj -> C:\Users\100716573\Documents\Visual Studio 2017\Projects\GDW-1-Project-2\Release\GDW-1-Project-2.exe

@@ -384,7 +384,6 @@ int main() {
 
 
 		Draw(console);
-		Sleep(40);
 	}
 
 
